@@ -1,0 +1,40 @@
+/*
+ * ============================================================
+ *  TEMA — muda o design do site TODO a partir deste ficheiro.
+ * ============================================================
+ *  Cores, tipografia, cantos e sombras estão aqui como
+ *  variáveis CSS. O resto do CSS (globals.css) só as consome.
+ */
+
+:root {
+  /* --- Cores base --- */
+  --bg: #f6f3ee;            /* fundo da página */
+  --surface: #ffffff;       /* cartões e formulários */
+  --text: #26221c;          /* texto principal */
+  --muted: #7a7264;         /* texto secundário */
+  --border: #e3ddd2;        /* linhas e contornos */
+
+  /* --- Cor de destaque (botões, links, barras de resultados) --- */
+  --accent: #c0392b;
+  --accent-hover: #a53125;
+  --accent-contrast: #ffffff; /* texto em cima do destaque */
+
+  /* --- Estados --- */
+  --open-badge-bg: #e8f2e4;
+  --open-badge-text: #3d6b34;
+  --closed-badge-bg: #eeeae2;
+  --closed-badge-text: #7a7264;
+  --error-bg: #fdeceb;
+  --error-text: #a53125;
+  --winner-bg: #faf2e6;
+
+  /* --- Tipografia --- */
+  --font-body: "Georgia", "Times New Roman", serif;
+  --font-heading: var(--font-body);
+  --font-ui: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+  /* --- Forma --- */
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(38, 34, 28, 0.08);
+  --max-width: 680px;
+}

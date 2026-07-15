@@ -1,0 +1,450 @@
+/* Estrutura do site. Para mudar o ASPETO (cores, letras, cantos),
+   edita app/theme.css — este ficheiro só usa as variáveis de lá. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.55;
+}
+
+a {
+  color: var(--accent);
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 1rem 4rem;
+}
+
+/* --- Cabeçalho --- */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 2rem;
+}
+
+.site-header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.1rem 1rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.site-title {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.site-title a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-subtitle {
+  color: var(--muted);
+  font-size: 0.85rem;
+  display: block;
+}
+
+.nav-link {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  text-decoration: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+}
+
+.nav-link:hover {
+  background: var(--accent-hover);
+}
+
+/* --- Cartões de proposta --- */
+.section-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin: 2rem 0 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.card h2 {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  margin-bottom: 0.2rem;
+}
+
+.card h2 a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card h2 a:hover {
+  color: var(--accent);
+}
+
+.card-meta {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+
+.badge {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+}
+
+.badge-open {
+  background: var(--open-badge-bg);
+  color: var(--open-badge-text);
+}
+
+.badge-closed {
+  background: var(--closed-badge-bg);
+  color: var(--closed-badge-text);
+}
+
+.empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --- Página da proposta --- */
+.proposal-description {
+  color: var(--muted);
+  margin: 0.6rem 0 1rem;
+  white-space: pre-wrap;
+}
+
+.option-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  background: var(--surface);
+}
+
+.option-row:hover {
+  border-color: var(--accent);
+}
+
+.option-row input[type="radio"] {
+  accent-color: var(--accent);
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem; /* alinha com a primeira linha do título */
+}
+
+.option-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.option-title {
+  font-weight: 600;
+}
+
+.option-description {
+  color: var(--muted);
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+
+/* --- Imagens --- */
+.media-img {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin: 0.5rem 0;
+}
+
+.media-img-small {
+  max-height: 160px;
+}
+
+/* --- Resultados --- */
+.result-row {
+  margin-bottom: 0.9rem;
+}
+
+.result-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.result-count {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.result-bar-track {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  height: 0.7rem;
+  overflow: hidden;
+}
+
+.result-bar {
+  background: var(--accent);
+  height: 100%;
+  border-radius: 999px;
+}
+
+.winner {
+  background: var(--winner-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.95rem;
+}
+
+/* --- Formulários --- */
+.form-field {
+  margin-bottom: 1.1rem;
+}
+
+.form-field label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.form-hint {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+textarea,
+select {
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.button {
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.6rem 1.3rem;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--accent-hover);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* --- Entradas de opção no formulário --- */
+.option-entry {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.option-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.option-entry-number {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.option-remove,
+.option-add {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+}
+
+.option-remove:hover,
+.option-add:hover {
+  text-decoration: underline;
+}
+
+input[type="file"] {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.form-error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+
+.notice {
+  background: var(--closed-badge-bg);
+  color: var(--closed-badge-text);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+}
+
+.back-link {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+/* --- Administração --- */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 220px;
+}
+
+.link-input {
+  font-size: 0.78rem !important;
+  color: var(--muted);
+}
+
+.member-actions {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.add-member-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.site-footer {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+.site-footer a {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}

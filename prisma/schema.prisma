@@ -1,0 +1,77 @@
+// CPD polls database schema.
+//
+// Local dev uses SQLite (a file on disk, zero setup).
+// For production on Vercel, switch provider to "postgresql" — see README.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Proposal {
+  id          String       @id @default(cuid())
+  title       String
+  description String       @default("")
+  imageId     String?
+  createdAt   DateTime     @default(now())
+  deadline    DateTime
+  options     Option[]
+  votes       Vote[]
+  memberVotes MemberVote[]
+}
+
+// A community member. Identified by a personal secret link (/m/[token]),
+// distributed by the admin — no accounts, no passwords.
+model Member {
+  id        String       @id @default(cuid())
+  name      String
+  token     String       @unique
+  createdAt DateTime     @default(now())
+  votes     MemberVote[]
+}
+
+// Records THAT a member voted on a proposal — never WHAT they voted.
+// The choice itself lives in Vote, with no link back to the member.
+model MemberVote {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId String
+
+  @@unique([memberId, proposalId])
+}
+
+model Option {
+  id          String   @id @default(cuid())
+  text        String
+  description String   @default("")
+  imageId     String?
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId  String
+  votes       Vote[]
+}
+
+// Uploaded images, stored in the database so local dev and production
+// work the same way (no external file storage). Served via /media/[id].
+model Media {
+  id        String   @id @default(cuid())
+  mimeType  String
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+// A vote stores no voter identity — fully anonymous.
+model Vote {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId String
+  option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  optionId   String
+}
