@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import "./theme.css";
 import "./globals.css";
@@ -19,11 +20,22 @@ export default function RootLayout({
       <body>
         <header className="site-header">
           <div className="site-header-inner">
-            <div className="site-title">
-              <Link href="/">CPD · A Casa do Povo</Link>
-              <span className="site-subtitle">
-                Comunidade Pouco Democrática
-              </span>
+            <div className="site-brand">
+              {/* Decorative: the title next to it already names the community. */}
+              <Image
+                className="site-logo"
+                src="/logo.png"
+                alt=""
+                width={44}
+                height={44}
+                priority
+              />
+              <div className="site-title">
+                <Link href="/">CPD · A Casa do Povo</Link>
+                <span className="site-subtitle">
+                  Comunidade Pouco Democrática
+                </span>
+              </div>
             </div>
             <Link href="/new" className="nav-link">
               Nova proposta

@@ -1,7 +1,7 @@
 // CPD polls database schema.
 //
-// Local dev uses SQLite (a file on disk, zero setup).
-// For production on Vercel, switch provider to "postgresql" — see README.
+// Postgres everywhere: a local database in dev, Vercel Postgres (Neon)
+// in production — see README.
 
 generator client {
   provider = "prisma-client-js"
@@ -27,14 +27,28 @@ model Proposal {
   memberVotes MemberVote[]
 }
 
-// A community member. Identified by a personal secret link (/m/[token]),
+// A community member. Identified by personal secret links (/m/[token]),
 // distributed by the admin — no accounts, no passwords.
 model Member {
   id        String       @id @default(cuid())
   name      String
-  token     String       @unique
   createdAt DateTime     @default(now())
+  links     MemberLink[]
   votes     MemberVote[]
+}
+
+// One personal secret link. A member can hold several — one per device —
+// so the same person is recognized on phone, laptop, etc. Revoking one
+// link (e.g. a lost phone) leaves the member's other devices working.
+model MemberLink {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  label     String   @default("")
+  createdAt DateTime @default(now())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  @@index([memberId])
 }
 
 // Records THAT a member voted on a proposal — never WHAT they voted.

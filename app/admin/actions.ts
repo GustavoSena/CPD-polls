@@ -44,12 +44,16 @@ export async function adminLogout(): Promise<void> {
   redirect("/admin");
 }
 
+function newToken(): string {
+  return randomBytes(16).toString("base64url");
+}
+
 export async function addMember(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const name = String(formData.get("name") ?? "").trim();
   if (name) {
     await prisma.member.create({
-      data: { name, token: randomBytes(16).toString("base64url") },
+      data: { name, links: { create: { token: newToken() } } },
     });
   }
   revalidatePath("/admin");
@@ -63,13 +67,26 @@ export async function removeMember(formData: FormData): Promise<void> {
   revalidatePath("/");
 }
 
-// New secret link for a member (e.g. if the old one leaked or was lost).
-export async function regenerateLink(formData: FormData): Promise<void> {
+// An extra secret link for the same person, so they can be recognized on
+// another device. The label is just a reminder of which device it went to.
+export async function addLink(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const memberId = String(formData.get("memberId") ?? "");
+  const label = String(formData.get("label") ?? "").trim();
+  const member = await prisma.member.findUnique({ where: { id: memberId } });
+  if (member) {
+    await prisma.memberLink.create({
+      data: { memberId, label, token: newToken() },
+    });
+  }
+  revalidatePath("/admin");
+}
+
+// Revoke a single link (e.g. a lost phone). The member's other devices keep
+// working, and their past votes are untouched.
+export async function removeLink(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const id = String(formData.get("id") ?? "");
-  await prisma.member.updateMany({
-    where: { id },
-    data: { token: randomBytes(16).toString("base64url") },
-  });
+  await prisma.memberLink.deleteMany({ where: { id } });
   revalidatePath("/admin");
 }

@@ -25,9 +25,14 @@ export async function isAdmin(): Promise<boolean> {
   return Boolean(value) && safeEqual(value!, adminSessionToken());
 }
 
-// The member identified by this browser's cookie, or null.
+// The member identified by this browser's cookie, or null. The cookie holds
+// one of the member's link tokens — they may have several, one per device.
 export async function currentMember() {
   const token = (await cookies()).get(MEMBER_COOKIE)?.value;
   if (!token) return null;
-  return prisma.member.findUnique({ where: { token } });
+  const link = await prisma.memberLink.findUnique({
+    where: { token },
+    include: { member: true },
+  });
+  return link?.member ?? null;
 }

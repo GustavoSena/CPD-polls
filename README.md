@@ -13,8 +13,10 @@ Site de votações da Comunidade Pouco Democrática.
   própria base de dados — não é preciso nenhum serviço de ficheiros.
 - **Membros da comunidade** votam com o seu **link pessoal secreto**
   (ex.: `/m/x7Kf…`), criado na página de administração e enviado em privado.
-  Não há contas nem palavras-passe para os membros — abrir o link uma vez
-  chega para o browser ficar reconhecido.
+  Cada membro pode ter **vários links — um por dispositivo** (telemóvel,
+  portátil…) e continua a ter apenas **um voto** por proposta, seja qual for
+  o dispositivo. Não há contas nem palavras-passe para os membros — abrir o
+  link uma vez chega para o browser ficar reconhecido.
 - **Anonimato**: a escolha de cada voto é guardada sem qualquer ligação ao
   membro. Regista-se apenas *que* o membro votou (para saber quando todos
   votaram e impedir votos duplos) — nunca *em quê*.
@@ -24,18 +26,23 @@ Site de votações da Comunidade Pouco Democrática.
 
 ## Administração
 
-Em **`/admin`** (link no rodapé) gere-se a lista de membros: adicionar,
-remover, copiar o link pessoal de cada um, ou gerar um link novo se algum
-se perder. A página é protegida por utilizador e palavra-passe —
-`ADMIN_USER` e `ADMIN_PASSWORD` no `.env`.
+Em **`/admin`** (link no rodapé) gere-se a lista de membros: adicionar e
+remover pessoas e, para cada uma, adicionar, copiar ou revogar os seus links
+pessoais — um por dispositivo. Revogar um link (ex.: telemóvel perdido) não
+afeta os outros dispositivos dessa pessoa nem os votos que já deu. A página
+é protegida por utilizador e palavra-passe — `ADMIN_USER` e `ADMIN_PASSWORD`
+no `.env`.
 
 ## Correr localmente
 
+Precisas de um Postgres nesta máquina (ex.: `brew install postgresql@16`).
+
 ```bash
 npm install
-cp .env.example .env    # ajusta o RESIDENT_CODE se quiseres
-npx prisma migrate dev  # cria a base de dados local (SQLite)
-npm run dev             # abre http://localhost:3000
+cp .env.example .env       # ajusta as ligações e o RESIDENT_CODE
+createdb cpd_polls_dev     # cria a base de dados local
+npx prisma migrate deploy  # cria as tabelas
+npm run dev                # abre http://localhost:3000
 ```
 
 ## Mudar o design
@@ -45,58 +52,29 @@ Todo o aspeto do site (cores, tipografia, cantos, sombras) está em
 acompanha. A estrutura/layout está em `app/globals.css`, e os textos estão
 nos ficheiros de `app/`.
 
-## Publicar (Vercel + Neon)
+## Publicar (Vercel + Vercel Postgres)
 
-O site corre na [Vercel](https://vercel.com) (grátis) com uma base de dados
-Postgres na [Neon](https://neon.tech) (grátis). Passos:
+O site está publicado em **https://cpd-polls.vercel.app**, na
+[Vercel](https://vercel.com), com uma base de dados Postgres (Neon) criada
+pela integração *Vercel Postgres*.
 
-1. **Base de dados** — cria uma conta na Neon, cria um projeto e copia a
-   *connection string* (começa com `postgresql://`).
+O deploy é **automático**: cada push para `main` constrói e publica uma
+versão nova. O `npm run build` corre `prisma migrate deploy`, por isso as
+migrações são aplicadas sozinhas em cada deploy.
 
-2. **Trocar o Prisma para Postgres** — em `prisma/schema.prisma` muda:
+*Environment Variables* no projeto da Vercel:
 
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
-
-   Depois cria as tabelas na Neon (uma vez, a partir do teu computador):
-
-   ```bash
-   DATABASE_URL="postgresql://...a-tua-string..." npx prisma db push
-   ```
-
-3. **Código no GitHub** — cria um repositório e faz push desta pasta
-   (o `.env` e a base de dados local nunca são enviados — já estão no
-   `.gitignore`).
-
-   ```bash
-   git init && git add -A && git commit -m "CPD polls"
-   git remote add origin <url-do-repo>
-   git push -u origin main
-   ```
-
-4. **Vercel** — em vercel.com, "Add New Project", importa o repositório e,
-   antes de fazer deploy, define as *Environment Variables*:
-
-   - `DATABASE_URL` → a connection string da Neon
-   - `RESIDENT_CODE` → o código secreto dos residentes
-   - `ADMIN_USER` e `ADMIN_PASSWORD` → credenciais da página `/admin`
-
-   Faz deploy. A Vercel dá-te um URL `https://….vercel.app` para partilhar
-   com a comunidade (podes ligar um domínio próprio depois, nas definições).
-
-Nota: para continuar a desenvolver localmente com SQLite depois do passo 2,
-volta a pôr `provider = "sqlite"` — ou passa a usar a Neon também em local,
-pondo a connection string no teu `.env`.
+- `POSTGRES_PRISMA_URL` e `POSTGRES_URL_NON_POOLING` → injetadas pela
+  integração da base de dados; não é preciso escrevê-las à mão
+- `RESIDENT_CODE` → o código secreto dos residentes
+- `ADMIN_USER` e `ADMIN_PASSWORD` → credenciais da página `/admin`
 
 ## Limitações assumidas (simplicidade primeiro)
 
-- Um membro pode reencaminhar o seu link pessoal a outra pessoa — é o
+- Um membro pode reencaminhar um link pessoal a outra pessoa — é o
   equivalente a entregar o boletim de voto, e nenhum login impede isso.
-  Se um link se perder ou fugir, gera-se um novo em `/admin`.
+  Se um link se perder ou fugir, revoga-se em `/admin`; os outros
+  dispositivos dessa pessoa continuam a funcionar.
 - Só quem está na lista de membros pode votar; visitantes sem link veem as
-  propostas mas não votam. Os residentes criam propostas com o
+  propostas e as opções, mas não votam. Os residentes criam propostas com o
   `RESIDENT_CODE`.
