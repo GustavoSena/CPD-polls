@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { currentMember } from "@/lib/auth";
 import { isClosed } from "@/lib/status";
 import { castVote } from "@/app/actions";
+import { Linkify } from "@/app/Linkify";
 import { TimeLeft } from "@/app/TimeLeft";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +66,9 @@ export default async function ProposalPage({
       <article className="card">
         <h2>{proposal.title}</h2>
         {proposal.description && (
-          <p className="proposal-description">{proposal.description}</p>
+          <p className="proposal-description">
+            <Linkify text={proposal.description} />
+          </p>
         )}
         {proposal.imageId && (
           <img
@@ -95,36 +98,14 @@ export default async function ProposalPage({
 
       {closed ? (
         <Results options={proposal.options} votes={proposal.votes} />
-      ) : !member ? (
-        <p className="notice">
-          Para votar precisas do teu link pessoal de membro. Se ainda não o
-          tens, pede a quem gere a comunidade.
-        </p>
-      ) : alreadyVoted ? (
-        <p className="notice">
-          O teu voto foi registado. Os resultados aparecem quando a proposta
-          encerrar.
-        </p>
-      ) : (
+      ) : member && !alreadyVoted ? (
         <section className="card">
           <form action={castVote}>
             <input type="hidden" name="proposalId" value={proposal.id} />
             {proposal.options.map((o) => (
               <label className="option-row" key={o.id}>
                 <input type="radio" name="optionId" value={o.id} required />
-                <span className="option-body">
-                  <span className="option-title">{o.text}</span>
-                  {o.description && (
-                    <span className="option-description">{o.description}</span>
-                  )}
-                  {o.imageId && (
-                    <img
-                      className="media-img"
-                      src={`/media/${o.imageId}`}
-                      alt={o.text}
-                    />
-                  )}
-                </span>
+                <OptionBody option={o} />
               </label>
             ))}
             <button className="button" type="submit">
@@ -132,8 +113,46 @@ export default async function ProposalPage({
             </button>
           </form>
         </section>
+      ) : (
+        // Anyone can read the options; only recognized members who have not
+        // voted yet get the form above.
+        <>
+          <p className="notice">
+            {member
+              ? "O teu voto foi registado. Os resultados aparecem quando a proposta encerrar."
+              : "Podes ver as opções, mas para votar precisas do teu link pessoal de membro. Se ainda não o tens, pede a quem gere a comunidade."}
+          </p>
+          <section className="card">
+            <h3 className="options-title">Opções em votação</h3>
+            {proposal.options.map((o) => (
+              <div className="option-row option-row-static" key={o.id}>
+                <OptionBody option={o} />
+              </div>
+            ))}
+          </section>
+        </>
       )}
     </>
+  );
+}
+
+function OptionBody({ option }: { option: OptionData }) {
+  return (
+    <span className="option-body">
+      <span className="option-title">{option.text}</span>
+      {option.description && (
+        <span className="option-description">
+          <Linkify text={option.description} />
+        </span>
+      )}
+      {option.imageId && (
+        <img
+          className="media-img"
+          src={`/media/${option.imageId}`}
+          alt={option.text}
+        />
+      )}
+    </span>
   );
 }
 
@@ -177,7 +196,9 @@ function Results({
             />
           </div>
           {c.description && (
-            <p className="option-description">{c.description}</p>
+            <p className="option-description">
+              <Linkify text={c.description} />
+            </p>
           )}
           {c.imageId && (
             <img

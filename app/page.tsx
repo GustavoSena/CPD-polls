@@ -6,6 +6,10 @@ import { TimeLeft } from "./TimeLeft";
 
 export const dynamic = "force-dynamic";
 
+function optionCount(n: number): string {
+  return n === 1 ? "1 opção" : `${n} opções`;
+}
+
 export default async function Home({
   searchParams,
 }: {
@@ -51,8 +55,10 @@ export default async function Home({
           <h2>
             <Link href={`/proposal/${p.id}`}>{p.title}</Link>
           </h2>
+          {p.description && <p className="card-excerpt">{p.description}</p>}
           <div className="card-meta">
             <span className="badge badge-open">Aberta</span>
+            <span>{optionCount(p.options.length)}</span>
             <span>
               {memberCount > 0
                 ? `${p.votes.length} de ${memberCount} votos`
@@ -79,8 +85,10 @@ export default async function Home({
             <h2>
               <Link href={`/proposal/${p.id}`}>{p.title}</Link>
             </h2>
+            {p.description && <p className="card-excerpt">{p.description}</p>}
             <div className="card-meta">
               <span className="badge badge-closed">Encerrada</span>
+              <span>{optionCount(p.options.length)}</span>
               <span>{p.votes.length} votos</span>
               <span>
                 {winners.length === 0
