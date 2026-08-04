@@ -13,6 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 const DATE_FORMAT = new Intl.DateTimeFormat("pt-PT", {
+  timeZone: "Europe/Lisbon",
   day: "numeric",
   month: "long",
   year: "numeric",
