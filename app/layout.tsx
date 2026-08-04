@@ -37,9 +37,14 @@ export default function RootLayout({
                 </span>
               </div>
             </div>
-            <Link href="/new" className="nav-link">
-              Nova proposta
-            </Link>
+            <nav className="site-nav">
+              <Link href="/suggestions" className="nav-link">
+                Sugestões
+              </Link>
+              <Link href="/new" className="nav-link">
+                Nova proposta
+              </Link>
+            </nav>
           </div>
         </header>
         <main className="container">{children}</main>
