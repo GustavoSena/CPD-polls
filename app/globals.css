@@ -241,6 +241,9 @@ a {
   display: block;
   max-width: 100%;
   max-height: 320px;
+  /* Dentro de .option-body (flex column), o stretch por omissão esticava a
+     imagem à largura do título mais comprido, distorcendo-a. */
+  align-self: flex-start;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   margin: 0.5rem 0;
