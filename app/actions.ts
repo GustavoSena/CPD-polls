@@ -116,6 +116,32 @@ export async function createProposal(
   redirect(`/proposal/${proposal.id}`);
 }
 
+const MAX_SUGGESTION_LENGTH = 2000;
+
+// Only recognized members (via their personal link) can leave suggestions.
+// Unlike votes, suggestions are signed: the author's name is shown.
+export async function createSuggestion(formData: FormData): Promise<void> {
+  const member = await currentMember();
+  if (!member) {
+    redirect("/suggestions?erro=membro");
+  }
+
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) {
+    redirect("/suggestions?erro=vazia");
+  }
+  if (text.length > MAX_SUGGESTION_LENGTH) {
+    redirect("/suggestions?erro=longa");
+  }
+
+  await prisma.suggestion.create({
+    data: { text, memberId: member.id },
+  });
+
+  revalidatePath("/suggestions");
+  redirect("/suggestions");
+}
+
 // Only recognized members (via their personal link) can vote, and only once
 // per proposal. The registered choice (Vote) has no link to the member —
 // MemberVote only records THAT they voted, for the "everyone voted" rule.

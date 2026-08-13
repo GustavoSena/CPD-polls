@@ -30,11 +30,12 @@ model Proposal {
 // A community member. Identified by personal secret links (/m/[token]),
 // distributed by the admin — no accounts, no passwords.
 model Member {
-  id        String       @id @default(cuid())
-  name      String
-  createdAt DateTime     @default(now())
-  links     MemberLink[]
-  votes     MemberVote[]
+  id          String       @id @default(cuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  links       MemberLink[]
+  votes       MemberVote[]
+  suggestions Suggestion[]
 }
 
 // One personal secret link. A member can hold several — one per device —
@@ -81,6 +82,18 @@ model Media {
   mimeType  String
   data      Bytes
   createdAt DateTime @default(now())
+}
+
+// A free-form suggestion from a recognized member. Unlike votes,
+// suggestions are signed: the author's name is shown next to the text.
+model Suggestion {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  @@index([memberId])
 }
 
 // A vote stores no voter identity — fully anonymous.
