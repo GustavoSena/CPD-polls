@@ -9,6 +9,7 @@ import {
   ADMIN_COOKIE,
   adminSessionToken,
   isAdmin,
+  normalizeEmail,
   safeEqual,
 } from "@/lib/auth";
 import { drawPairs, MIN_PARTICIPANTS } from "@/lib/secretSanta";
@@ -49,15 +50,38 @@ function newToken(): string {
   return randomBytes(16).toString("base64url");
 }
 
+// An email that is free to use, or a redirect back with the reason.
+async function checkEmail(raw: string, exceptMemberId?: string) {
+  const email = normalizeEmail(raw);
+  if (!email) return null;
+  if (!email.includes("@")) redirect("/admin?erro=email-invalido");
+  const owner = await prisma.member.findUnique({ where: { email } });
+  if (owner && owner.id !== exceptMemberId) redirect("/admin?erro=email-usado");
+  return email;
+}
+
+// New members sign in with their email. A personal link is no longer
+// created up front; the admin can still add one for someone without email.
 export async function addMember(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const name = String(formData.get("name") ?? "").trim();
+  const email = await checkEmail(String(formData.get("email") ?? ""));
   if (name) {
-    await prisma.member.create({
-      data: { name, links: { create: { token: newToken() } } },
-    });
+    await prisma.member.create({ data: { name, email } });
   }
   revalidatePath("/admin");
+  redirect("/admin");
+}
+
+// Set, change or clear the email a member signs in with. Devices already
+// signed in stay signed in.
+export async function setMemberEmail(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const id = String(formData.get("id") ?? "");
+  const email = await checkEmail(String(formData.get("email") ?? ""), id);
+  await prisma.member.updateMany({ where: { id }, data: { email } });
+  revalidatePath("/admin");
+  redirect("/admin");
 }
 
 export async function removeMember(formData: FormData): Promise<void> {
@@ -83,8 +107,8 @@ export async function addLink(formData: FormData): Promise<void> {
   revalidatePath("/admin");
 }
 
-// Revoke a single link (e.g. a lost phone). The member's other devices keep
-// working, and their past votes are untouched.
+// Revoke a single device or link (e.g. a lost phone). The member's other
+// devices keep working, and their past votes are untouched.
 export async function removeLink(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const id = String(formData.get("id") ?? "");

@@ -10,6 +10,7 @@ import {
   endSecretSanta,
   removeLink,
   removeMember,
+  setMemberEmail,
   startSecretSanta,
 } from "./actions";
 import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
@@ -21,7 +22,16 @@ export const dynamic = "force-dynamic";
 const ERROR_MESSAGES: Record<string, string> = {
   "amigo-secreto-poucos": `O sorteio precisa de pelo menos ${MIN_PARTICIPANTS} participantes.`,
   "amigo-secreto-ativo": "Já há um amigo secreto a decorrer.",
+  "email-invalido": "Esse email não parece válido.",
+  "email-usado": "Esse email já pertence a outro membro.",
 };
+
+const DATE_FORMAT = new Intl.DateTimeFormat("pt-PT", {
+  timeZone: "Europe/Lisbon",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
 
 export default async function AdminPage({
   searchParams,
@@ -77,12 +87,17 @@ export default async function AdminPage({
           </form>
         </div>
         <p className="proposal-description">
-          Cada membro tem um ou mais links pessoais secretos — um por
-          dispositivo (telemóvel, portátil…). Envia-os em privado: é com eles
-          que a pessoa fica reconhecida para votar. Cada pessoa continua a ter
+          Cada membro entra com o seu email: recebe um código e o dispositivo
+          fica reconhecido. Os dispositivos de cada pessoa aparecem abaixo e
+          podem ser revogados (ex.: telemóvel perdido). Para alguém sem email
+          podes criar um link pessoal e enviá-lo em privado. Cada pessoa tem
           apenas um voto, seja qual for o dispositivo. As propostas encerram
           quando todos os membros da lista tiverem votado.
         </p>
+
+        {erro && !erro.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
+          <p className="form-error">{ERROR_MESSAGES[erro]}</p>
+        )}
 
         {members.length === 0 && <p className="empty">Ainda não há membros.</p>}
 
@@ -98,13 +113,48 @@ export default async function AdminPage({
               </form>
             </div>
 
+            <form action={setMemberEmail} className="member-email-form">
+              <input type="hidden" name="id" value={m.id} />
+              <input
+                name="email"
+                type="email"
+                defaultValue={m.email ?? ""}
+                placeholder="Email para entrar"
+                aria-label={`Email de ${m.name}`}
+              />
+              <button type="submit" className="option-add">
+                Guardar
+              </button>
+            </form>
+
             {m.links.length === 0 && (
               <p className="empty">
-                Sem links — adiciona um para esta pessoa poder votar.
+                {m.email
+                  ? "Ainda não entrou em nenhum dispositivo."
+                  : "Sem email nem links — adiciona um para esta pessoa poder votar."}
               </p>
             )}
 
             {m.links.map((l) => {
+              if (l.fromLogin) {
+                return (
+                  <div className="link-row" key={l.id}>
+                    <div className="link-info">
+                      <span className="link-label">
+                        {l.label} · desde {DATE_FORMAT.format(l.createdAt)}
+                      </span>
+                    </div>
+                    <div className="link-actions">
+                      <form action={removeLink}>
+                        <input type="hidden" name="id" value={l.id} />
+                        <button type="submit" className="option-remove">
+                          Revogar
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                );
+              }
               const link = `${baseUrl}/m/${l.token}`;
               return (
                 <div className="link-row" key={l.id}>
@@ -135,7 +185,7 @@ export default async function AdminPage({
                 placeholder="Nome do dispositivo (ex.: telemóvel)"
               />
               <button type="submit" className="option-add">
-                + Adicionar link
+                + Criar link pessoal
               </button>
             </form>
           </div>
@@ -148,6 +198,7 @@ export default async function AdminPage({
             required
             placeholder="Nome do novo membro"
           />
+          <input name="email" type="email" placeholder="Email" />
           <button className="button" type="submit">
             Adicionar
           </button>
@@ -156,7 +207,7 @@ export default async function AdminPage({
 
       <section className="card" id="amigo-secreto">
         <h2>Amigo secreto</h2>
-        {erro && ERROR_MESSAGES[erro] && (
+        {erro?.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
           <p className="form-error">{ERROR_MESSAGES[erro]}</p>
         )}
 
