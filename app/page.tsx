@@ -36,13 +36,14 @@ export default async function Home({
     <>
       {erro === "link" && (
         <p className="form-error">
-          Esse link de membro já não é válido. Pede um novo a quem gere a
-          comunidade.
+          Esse link de membro já não é válido.{" "}
+          <Link href="/entrar">Entra com o teu email</Link> ou pede um novo
+          link a quem gere a comunidade.
         </p>
       )}
       {member && (
         <p className="notice notice-success">
-          Olá, {member.name}! Este browser está reconhecido — já podes votar.
+          Olá, {member.name}! Este dispositivo está reconhecido — já podes votar.
         </p>
       )}
 

@@ -4,6 +4,14 @@ import { prisma } from "./db";
 
 export const ADMIN_COOKIE = "cpd_admin";
 export const MEMBER_COOKIE = "cpd_member";
+// Holds the id of the pending LoginCode between the two sign-in steps.
+export const LOGIN_COOKIE = "cpd_login";
+// Browsers cap cookie lifetime at 400 days.
+export const MEMBER_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
+
+export function normalizeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
 
 // Constant-time string comparison (hashing first equalizes lengths).
 export function safeEqual(a: string, b: string): boolean {
@@ -26,7 +34,7 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 // The member identified by this browser's cookie, or null. The cookie holds
-// one of the member's link tokens — they may have several, one per device.
+// one of the member's device tokens (from email sign-in or a personal link).
 export async function currentMember() {
   const token = (await cookies()).get(MEMBER_COOKIE)?.value;
   if (!token) return null;

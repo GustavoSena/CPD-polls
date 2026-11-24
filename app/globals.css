@@ -189,11 +189,57 @@ h3 {
 
   .site-nav {
     width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .nav-link {
+    padding: 0.45rem 0.65rem;
+  }
+
+  /* O nome do membro já aparece na mensagem de boas-vindas — poupa
+     espaço para o menu caber numa linha. */
+  .member-nav-name {
+    display: none;
   }
 
   .nav-link-primary {
     margin-left: auto;
   }
+
+  /* Em ecrã estreito as linhas de meta quebram: sem separadores "·". */
+  .card-meta {
+    gap: 0.35rem 0.9rem;
+  }
+
+  .card .card-meta > span + span:not(.badge)::before {
+    content: none;
+  }
+}
+
+/* Membro com sessão iniciada: nome + "Sair" neste dispositivo. */
+.member-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.member-nav-name {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  padding-left: 0.5rem;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-nav-signout {
+  border: none;
+  background: none;
+  cursor: pointer;
+  line-height: inherit;
 }
 
 /* --- Títulos de página e de secção --- */
@@ -966,8 +1012,14 @@ input[type="file"]::file-selector-button:hover {
 
 .add-member-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.1rem;
+}
+
+.add-member-form input {
+  flex: 1 1 10rem;
+  min-width: 0;
 }
 
 .add-member-form .button {
@@ -1000,6 +1052,20 @@ input[type="file"]::file-selector-button:hover {
   color: var(--accent);
 }
 
+/* Admin: a member's email field. */
+.member-email-form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.member-email-form input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem !important;
+  padding: 0.35rem 0.6rem !important;
+}
+
 @media (max-width: 520px) {
   .site-footer {
     flex-direction: column;
@@ -1015,4 +1081,14 @@ input[type="file"]::file-selector-button:hover {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* --- Entrar: campo do código de 6 dígitos --- */
+input[autocomplete="one-time-code"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  padding: 0.7rem 0.8rem;
 }

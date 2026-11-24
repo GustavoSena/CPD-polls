@@ -3,33 +3,29 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-// Header navigation. Client-side only to mark the current page.
-const LINKS = [
-  { href: "/suggestions", label: "Sugestões", primary: false },
-  { href: "/new", label: "Nova proposta", primary: true },
-];
-
-export function SiteNav() {
+// Header navigation (the logo links home). Client-side only to mark the current page. `children`
+// is the member slot (MemberNav, a server component) placed before the
+// primary "Nova proposta" button.
+export function SiteNav({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
+  const current = (active: boolean) => (active ? "page" : undefined);
   return (
     <nav className="site-nav" aria-label="Principal">
       <Link
-        href="/"
+        href="/suggestions"
         className="nav-link"
-        aria-current={pathname === "/" ? "page" : undefined}
+        aria-current={current(pathname.startsWith("/suggestions"))}
       >
-        Propostas
+        Sugestões
       </Link>
-      {LINKS.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          className={l.primary ? "nav-link nav-link-primary" : "nav-link"}
-          aria-current={pathname.startsWith(l.href) ? "page" : undefined}
-        >
-          {l.label}
-        </Link>
-      ))}
+      {children}
+      <Link
+        href="/new"
+        className="nav-link nav-link-primary"
+        aria-current={current(pathname.startsWith("/new"))}
+      >
+        Nova proposta
+      </Link>
     </nav>
   );
 }
