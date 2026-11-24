@@ -2,7 +2,6 @@ import { createHash, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { prisma } from "./db";
 
-export const ADMIN_COOKIE = "cpd_admin";
 export const MEMBER_COOKIE = "cpd_member";
 // Holds the id of the pending LoginCode between the two sign-in steps.
 export const LOGIN_COOKIE = "cpd_login";
@@ -19,28 +18,37 @@ export function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(hash(a), hash(b));
 }
 
-// The admin session cookie stores this token. It is derived from the
-// password, so changing ADMIN_PASSWORD invalidates existing sessions.
-export function adminSessionToken(): string {
-  return createHash("sha256")
-    .update(`cpd-admin-session:${process.env.ADMIN_PASSWORD}`)
-    .digest("hex");
+// Admins are members whose email is listed in ADMIN_EMAILS (comma-separated).
+// They sign in like any member, with an emailed code; there is no separate
+// admin password. A personal /m/ link never grants admin access, because
+// such links can be forwarded: only a device signed in by email counts.
+export function adminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map(normalizeEmail)
+    .filter(Boolean);
 }
 
 export async function isAdmin(): Promise<boolean> {
-  if (!process.env.ADMIN_PASSWORD) return false;
-  const value = (await cookies()).get(ADMIN_COOKIE)?.value;
-  return Boolean(value) && safeEqual(value!, adminSessionToken());
+  const link = await currentLink();
+  return Boolean(
+    link?.fromLogin &&
+      link.member.email &&
+      adminEmails().includes(link.member.email)
+  );
 }
 
 // The member identified by this browser's cookie, or null. The cookie holds
 // one of the member's device tokens (from email sign-in or a personal link).
 export async function currentMember() {
+  return (await currentLink())?.member ?? null;
+}
+
+async function currentLink() {
   const token = (await cookies()).get(MEMBER_COOKIE)?.value;
   if (!token) return null;
-  const link = await prisma.memberLink.findUnique({
+  return prisma.memberLink.findUnique({
     where: { token },
     include: { member: true },
   });
-  return link?.member ?? null;
 }
