@@ -15,6 +15,7 @@ import {
 } from "./actions";
 import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import { CopyButton } from "./CopyButton";
+import { ProposalsAdmin } from "./ProposalsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -316,6 +317,8 @@ export default async function AdminPage({
           </form>
         )}
       </section>
+
+      <ProposalsAdmin />
     </>
   );
 }
