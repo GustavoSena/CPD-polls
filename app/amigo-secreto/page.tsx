@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { currentMember } from "@/lib/auth";
 import { secretSantaViewFor } from "@/lib/secretSanta";
 import { Linkify } from "@/app/Linkify";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const ERROR_MESSAGES: Record<string, string> = {
   membro:
-    "Para participar no amigo secreto, abre primeiro o teu link pessoal de membro.",
+    "Para participar no amigo secreto, entra primeiro com o teu email de membro.",
   link: "Esse link não parece válido. Cola o endereço completo da página (https://…).",
   nota: "A nota é demasiado longa (máximo 300 caracteres).",
   limite: "A tua lista já tem o máximo de 20 desejos.",
@@ -84,8 +85,8 @@ export default async function SecretSantaPage({
         <h1 className="section-title">Amigo secreto</h1>
         <p className="notice">
           Para ver a quem vais dar um presente e preencher a tua lista de
-          desejos, abre o teu link pessoal de membro. Se ainda não o tens, pede
-          a quem gere a comunidade.
+          desejos, tens de{" "}
+          <Link href="/entrar">entrar com o teu email</Link> de membro.
         </p>
       </>
     );
