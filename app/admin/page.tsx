@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
+import { currentMember, isAdmin } from "@/lib/auth";
 import {
   addLink,
   addMember,
-  adminLogout,
   removeLink,
   removeMember,
   setMemberEmail,
 } from "./actions";
-import { AdminLoginForm } from "./AdminLoginForm";
 import { CopyButton } from "./CopyButton";
 import { ProposalsAdmin } from "./ProposalsAdmin";
 
@@ -41,7 +39,16 @@ export default async function AdminPage({
         <p className="proposal-description">
           Área reservada à gestão de membros da comunidade.
         </p>
-        <AdminLoginForm />
+        {(await currentMember()) ? (
+          <p className="form-error">
+            Esta conta não tem acesso à administração.
+          </p>
+        ) : (
+          <p className="proposal-description">
+            <Link href="/entrar">Entra com o teu email</Link> de
+            administrador para continuar.
+          </p>
+        )}
       </section>
     );
   }
@@ -64,11 +71,6 @@ export default async function AdminPage({
       <section className="card">
         <div className="admin-header">
           <h2>Membros da comunidade</h2>
-          <form action={adminLogout}>
-            <button type="submit" className="option-remove">
-              Sair
-            </button>
-          </form>
         </div>
         <p className="proposal-description">
           Cada membro entra com o seu email: recebe um código e o dispositivo
