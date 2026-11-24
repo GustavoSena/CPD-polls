@@ -22,7 +22,10 @@ const IMAGE_TYPES = new Set([
   "image/gif",
 ]);
 
-const blocked = new BlockList();
+// Separate lists: a single BlockList maps IPv4 onto ::ffff:0:0/96, so an
+// IPv6 rule for that range would also match every IPv4 address.
+const blockedV4 = new BlockList();
+const blockedV6 = new BlockList();
 for (const [net, prefix] of [
   ["0.0.0.0", 8],
   ["10.0.0.0", 8],
@@ -39,12 +42,11 @@ for (const [net, prefix] of [
   ["224.0.0.0", 4],
   ["240.0.0.0", 4],
 ] as const) {
-  blocked.addSubnet(net, prefix, "ipv4");
+  blockedV4.addSubnet(net, prefix, "ipv4");
 }
 for (const [net, prefix] of [
   ["::", 128],
   ["::1", 128],
-  ["::ffff:0:0", 96], // IPv4-mapped: checked again as IPv4 below
   ["64:ff9b::", 96],
   ["100::", 64],
   ["2001:db8::", 32],
@@ -52,16 +54,30 @@ for (const [net, prefix] of [
   ["fe80::", 10],
   ["ff00::", 8],
 ] as const) {
-  blocked.addSubnet(net, prefix, "ipv6");
+  blockedV6.addSubnet(net, prefix, "ipv6");
+}
+
+// IPv4-mapped IPv6 (::ffff:a.b.c.d or ::ffff:7f00:1) as dotted IPv4, else null.
+function mappedIPv4(address: string): string | null {
+  const a = address.toLowerCase();
+  const dotted = a.match(/^(?:0{0,4}:){0,5}:?ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  if (dotted) return dotted[1];
+  const hex = a.match(/^(?:0{0,4}:){0,5}:?ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (hex) {
+    const hi = parseInt(hex[1], 16);
+    const lo = parseInt(hex[2], 16);
+    return `${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`;
+  }
+  return null;
 }
 
 function isPublicAddress(address: string): boolean {
   const family = isIP(address);
-  if (family === 4) return !blocked.check(address, "ipv4");
+  if (family === 4) return !blockedV4.check(address, "ipv4");
   if (family === 6) {
-    const mapped = address.toLowerCase().match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return !blocked.check(mapped[1], "ipv4");
-    return !blocked.check(address, "ipv6");
+    const mapped = mappedIPv4(address);
+    if (mapped) return !blockedV4.check(mapped, "ipv4");
+    return !blockedV6.check(address, "ipv6");
   }
   return false;
 }
