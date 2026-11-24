@@ -11,6 +11,7 @@ import {
   isAdmin,
   safeEqual,
 } from "@/lib/auth";
+import { drawPairs, MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import type { FormState } from "@/app/actions";
 
 export async function adminLogin(
@@ -89,4 +90,68 @@ export async function removeLink(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   await prisma.memberLink.deleteMany({ where: { id } });
   revalidatePath("/admin");
+}
+
+// Starts a Secret Santa round and draws the pairs right away. The admin
+// picks who takes part; the result is only ever shown to each giver.
+export async function startSecretSanta(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+
+  const name = String(formData.get("name") ?? "").trim() || "Amigo secreto";
+  const details = String(formData.get("details") ?? "").trim().slice(0, 1000);
+  const requested = new Set(formData.getAll("memberId").map(String));
+  const members = await prisma.member.findMany({
+    where: { id: { in: [...requested] } },
+    select: { id: true },
+  });
+  if (members.length < MIN_PARTICIPANTS) {
+    redirect("/admin?erro=amigo-secreto-poucos");
+  }
+  if (await prisma.secretSantaEvent.findFirst({ where: { active: true } })) {
+    redirect("/admin?erro=amigo-secreto-ativo");
+  }
+
+  await prisma.secretSantaEvent.create({
+    data: {
+      name,
+      details,
+      assignments: { create: drawPairs(members.map((m) => m.id)) },
+    },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/amigo-secreto");
+  redirect("/admin");
+}
+
+// Ends the round: it disappears for members, but the data is kept.
+export async function endSecretSanta(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const id = String(formData.get("id") ?? "");
+  await prisma.secretSantaEvent.updateMany({
+    where: { id },
+    data: { active: false },
+  });
+  revalidatePath("/admin");
+  revalidatePath("/amigo-secreto");
+  redirect("/admin");
+}
+
+// Deletes the round entirely (pairs and wishlists), e.g. to redo the draw
+// with a different group.
+export async function cancelSecretSanta(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const id = String(formData.get("id") ?? "");
+  const items = await prisma.wishlistItem.findMany({
+    where: { eventId: id, imageId: { not: null } },
+    select: { imageId: true },
+  });
+  await prisma.$transaction([
+    prisma.secretSantaEvent.deleteMany({ where: { id } }),
+    prisma.media.deleteMany({
+      where: { id: { in: items.map((i) => i.imageId!) } },
+    }),
+  ]);
+  revalidatePath("/admin");
+  revalidatePath("/amigo-secreto");
+  redirect("/admin");
 }

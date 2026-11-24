@@ -6,15 +6,29 @@ import {
   addLink,
   addMember,
   adminLogout,
+  cancelSecretSanta,
+  endSecretSanta,
   removeLink,
   removeMember,
+  startSecretSanta,
 } from "./actions";
+import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import { AdminLoginForm } from "./AdminLoginForm";
 import { CopyButton } from "./CopyButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  "amigo-secreto-poucos": `O sorteio precisa de pelo menos ${MIN_PARTICIPANTS} participantes.`,
+  "amigo-secreto-ativo": "Já há um amigo secreto a decorrer.",
+};
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string }>;
+}) {
+  const { erro } = await searchParams;
   if (!(await isAdmin())) {
     return (
       <section className="card">
@@ -31,6 +45,17 @@ export default async function AdminPage() {
     orderBy: { createdAt: "asc" },
     include: { links: { orderBy: { createdAt: "asc" } } },
   });
+
+  // Only counts are loaded for the admin — never who drew whom.
+  const santa = await prisma.secretSantaEvent.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: "desc" },
+    include: {
+      _count: { select: { assignments: true } },
+      wishlist: { select: { memberId: true } },
+    },
+  });
+  const withWishes = new Set(santa?.wishlist.map((w) => w.memberId)).size;
 
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
@@ -127,6 +152,83 @@ export default async function AdminPage() {
             Adicionar
           </button>
         </form>
+      </section>
+
+      <section className="card" id="amigo-secreto">
+        <h2>Amigo secreto</h2>
+        {erro && ERROR_MESSAGES[erro] && (
+          <p className="form-error">{ERROR_MESSAGES[erro]}</p>
+        )}
+
+        {santa ? (
+          <>
+            <p className="proposal-description">
+              <strong>{santa.name}</strong> está a decorrer, com{" "}
+              {santa._count.assignments} participantes.{" "}
+              {withWishes} já adicionaram desejos à lista. Cada pessoa vê a
+              quem dá o presente em <Link href="/amigo-secreto">Amigo
+              secreto</Link> — os pares não aparecem aqui.
+            </p>
+            <div className="santa-admin-actions">
+              <form action={endSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="button">
+                  Encerrar
+                </button>
+              </form>
+              <form action={cancelSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="option-remove">
+                  Cancelar e apagar sorteio e listas
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <form action={startSecretSanta}>
+            <p className="proposal-description">
+              Escolhe quem participa e faz o sorteio. Cada pessoa fica a saber
+              só a quem dá o presente, e pode preencher uma lista de desejos
+              que apenas quem a tirou consegue ver.
+            </p>
+            <div className="form-field">
+              <label htmlFor="santa-name">Nome</label>
+              <input
+                id="santa-name"
+                name="name"
+                type="text"
+                defaultValue={`Amigo secreto ${new Date().getFullYear()}`}
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="santa-details">Detalhes (opcional)</label>
+              <textarea
+                id="santa-details"
+                name="details"
+                rows={2}
+                maxLength={1000}
+                placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
+              />
+            </div>
+            <fieldset className="form-field santa-participants">
+              <legend>Participantes</legend>
+              {members.map((m) => (
+                <label key={m.id} className="santa-participant">
+                  <input
+                    type="checkbox"
+                    name="memberId"
+                    value={m.id}
+                    defaultChecked
+                  />
+                  {m.name}
+                </label>
+              ))}
+            </fieldset>
+            <button className="button" type="submit">
+              Fazer sorteio
+            </button>
+          </form>
+        )}
       </section>
     </>
   );

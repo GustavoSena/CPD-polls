@@ -36,6 +36,10 @@ model Member {
   links       MemberLink[]
   votes       MemberVote[]
   suggestions Suggestion[]
+  // Secret Santa: who this member gives to / receives from, and their wishes.
+  givingTo      SecretSantaAssignment[] @relation("giver")
+  receivingFrom SecretSantaAssignment[] @relation("receiver")
+  wishlistItems WishlistItem[]
 }
 
 // One personal secret link. A member can hold several — one per device —
@@ -104,4 +108,53 @@ model Vote {
   proposalId String
   option     Option   @relation(fields: [optionId], references: [id], onDelete: Cascade)
   optionId   String
+}
+
+// A Secret Santa round ("Amigo secreto"), started by the admin. The draw
+// happens when the event is created; only one event is active at a time.
+// The admin never sees who gives to whom — only each giver does.
+model SecretSantaEvent {
+  id          String                  @id @default(cuid())
+  name        String
+  // Free-form note from the admin, e.g. budget or exchange date.
+  details     String                  @default("")
+  active      Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  assignments SecretSantaAssignment[]
+  wishlist    WishlistItem[]
+
+  @@index([active])
+}
+
+// One drawn pair: giver gives a gift to receiver. Each participant appears
+// exactly once as giver and once as receiver within an event.
+model SecretSantaAssignment {
+  id         String           @id @default(cuid())
+  event      SecretSantaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId    String
+  giver      Member           @relation("giver", fields: [giverId], references: [id], onDelete: Cascade)
+  giverId    String
+  receiver   Member           @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String
+
+  @@unique([eventId, giverId])
+  @@unique([eventId, receiverId])
+}
+
+// A link on a member's wishlist for one event. Title and preview image are
+// read from the page's Open Graph tags when the link is added; the image is
+// copied into Media so it is served from this site.
+model WishlistItem {
+  id        String           @id @default(cuid())
+  url       String
+  title     String           @default("")
+  imageId   String?
+  note      String           @default("")
+  createdAt DateTime         @default(now())
+  event     SecretSantaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  member    Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  @@index([eventId, memberId])
 }

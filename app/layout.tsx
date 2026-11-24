@@ -38,6 +38,9 @@ export default function RootLayout({
               </div>
             </div>
             <nav className="site-nav">
+              <Link href="/amigo-secreto" className="nav-link">
+                Amigo secreto
+              </Link>
               <Link href="/suggestions" className="nav-link">
                 Sugestões
               </Link>
