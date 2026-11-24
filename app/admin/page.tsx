@@ -10,6 +10,7 @@ import {
   setMemberEmail,
 } from "./actions";
 import { CopyButton } from "./CopyButton";
+import { ProposalsAdmin } from "./ProposalsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -189,6 +190,8 @@ export default async function AdminPage({
           </button>
         </form>
       </section>
+
+      <ProposalsAdmin />
     </>
   );
 }
