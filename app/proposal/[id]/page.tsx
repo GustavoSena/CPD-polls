@@ -13,7 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   escolhe: "Escolhe uma opção antes de votar.",
   repetido: "Já votaste nesta proposta.",
   fechada: "Esta proposta já encerrou.",
-  membro: "Para votar, abre primeiro o teu link pessoal de membro.",
+  membro: "Para votar, entra primeiro com o teu email de membro.",
 };
 
 type OptionData = {
@@ -118,9 +118,14 @@ export default async function ProposalPage({
         // voted yet get the form above.
         <>
           <p className="notice">
-            {member
-              ? "O teu voto foi registado. Os resultados aparecem quando a proposta encerrar."
-              : "Podes ver as opções, mas para votar precisas do teu link pessoal de membro. Se ainda não o tens, pede a quem gere a comunidade."}
+            {member ? (
+              "O teu voto foi registado. Os resultados aparecem quando a proposta encerrar."
+            ) : (
+              <>
+                Podes ver as opções, mas para votar tens de{" "}
+                <Link href="/entrar">entrar com o teu email</Link> de membro.
+              </>
+            )}
           </p>
           <section className="card">
             <h3 className="options-title">Opções em votação</h3>

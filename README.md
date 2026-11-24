@@ -11,12 +11,14 @@ Site de votações da Comunidade Pouco Democrática.
   (opcionais, exceto o título). A proposta também pode ter imagem.
   As imagens (JPG, PNG, WebP ou GIF, até 4 MB cada) ficam guardadas na
   própria base de dados — não é preciso nenhum serviço de ficheiros.
-- **Membros da comunidade** votam com o seu **link pessoal secreto**
-  (ex.: `/m/x7Kf…`), criado na página de administração e enviado em privado.
-  Cada membro pode ter **vários links — um por dispositivo** (telemóvel,
-  portátil…) e continua a ter apenas **um voto** por proposta, seja qual for
-  o dispositivo. Não há contas nem palavras-passe para os membros — abrir o
-  link uma vez chega para o browser ficar reconhecido.
+- **Membros da comunidade** entram com o seu **email**: em [/entrar](http://localhost:3000/entrar)
+  escrevem o email, recebem um **código de 6 dígitos** e o dispositivo fica
+  reconhecido (cookie de 400 dias) até carregarem em *Sair* ou o admin o
+  revogar. Cada pessoa pode entrar em **vários dispositivos** e continua a ter
+  apenas **um voto** por proposta. Os códigos expiram em 10 minutos, aceitam
+  5 tentativas e cada email pode pedir no máximo 5 códigos em 30 minutos.
+  Para quem não tem email, o admin pode ainda criar um **link pessoal secreto**
+  (ex.: `/m/x7Kf…`); os links já distribuídos continuam a funcionar.
 - **Anonimato**: a escolha de cada voto é guardada sem qualquer ligação ao
   membro. Regista-se apenas *que* o membro votou (para saber quando todos
   votaram e impedir votos duplos) — nunca *em quê*.
@@ -27,8 +29,8 @@ Site de votações da Comunidade Pouco Democrática.
 ## Administração
 
 Em **`/admin`** (link no rodapé) gere-se a lista de membros: adicionar e
-remover pessoas e, para cada uma, adicionar, copiar ou revogar os seus links
-pessoais — um por dispositivo. Revogar um link (ex.: telemóvel perdido) não
+remover pessoas, definir o email com que cada uma entra e ver ou revogar os
+seus dispositivos (e criar links pessoais para quem não tem email). Revogar um link (ex.: telemóvel perdido) não
 afeta os outros dispositivos dessa pessoa nem os votos que já deu. A página
 é protegida por utilizador e palavra-passe — `ADMIN_USER` e `ADMIN_PASSWORD`
 no `.env`.
@@ -68,9 +70,15 @@ migrações são aplicadas sozinhas em cada deploy.
   integração da base de dados; não é preciso escrevê-las à mão
 - `RESIDENT_CODE` → o código secreto dos residentes
 - `ADMIN_USER` e `ADMIN_PASSWORD` → credenciais da página `/admin`
+- `RESEND_API_KEY` → chave da [Resend](https://resend.com) para enviar os
+  códigos de entrada
+- `EMAIL_FROM` → remetente, num domínio verificado na Resend
+  (ex.: `CPD <codigos@exemplo.pt>`)
 
 ## Limitações assumidas (simplicidade primeiro)
 
+- Na página de entrada, quem escrever um email fica a saber se ele está na
+  lista de membros (mensagem mais clara para uma comunidade pequena).
 - Um membro pode reencaminhar um link pessoal a outra pessoa — é o
   equivalente a entregar o boletim de voto, e nenhum login impede isso.
   Se um link se perder ou fugir, revoga-se em `/admin`; os outros

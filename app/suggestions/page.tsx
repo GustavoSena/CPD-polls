@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { currentMember } from "@/lib/auth";
 import { createSuggestion } from "@/app/actions";
@@ -6,8 +7,7 @@ import { Linkify } from "@/app/Linkify";
 export const dynamic = "force-dynamic";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  membro:
-    "Para deixar uma sugestão, abre primeiro o teu link pessoal de membro.",
+  membro: "Para deixar uma sugestão, entra primeiro com o teu email de membro.",
   vazia: "Escreve a tua sugestão antes de enviar.",
   longa: "A sugestão é demasiado longa (máximo 2000 caracteres).",
 };
@@ -66,9 +66,8 @@ export default async function SuggestionsPage({
         </section>
       ) : (
         <p className="notice">
-          Podes ler as sugestões, mas para deixar a tua precisas do teu link
-          pessoal de membro. Se ainda não o tens, pede a quem gere a
-          comunidade.
+          Podes ler as sugestões, mas para deixar a tua tens de{" "}
+          <Link href="/entrar">entrar com o teu email</Link> de membro.
         </p>
       )}
 
