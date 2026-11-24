@@ -1092,3 +1092,23 @@ input[autocomplete="one-time-code"] {
   text-align: center;
   padding: 0.7rem 0.8rem;
 }
+
+/* Admin: título de proposta na lista, como link discreto. */
+.link-info > a.option-title {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.link-info > a.option-title:hover {
+  color: var(--accent);
+}
+
+.add-link-form {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+.add-link-form input[type="text"] {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
