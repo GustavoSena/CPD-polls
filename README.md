@@ -12,7 +12,7 @@ Site de votações da Comunidade Pouco Democrática.
   As imagens (JPG, PNG, WebP ou GIF, até 4 MB cada) ficam guardadas na
   própria base de dados — não é preciso nenhum serviço de ficheiros.
 - **Membros da comunidade** entram com o seu **email**: em [/entrar](http://localhost:3000/entrar)
-  escrevem o email, recebem um **código de 6 dígitos** e o dispositivo fica
+  escrevem o email, recebem um **código de 6 dígitos** (enviado pelo Gmail) e o dispositivo fica
   reconhecido (cookie de 400 dias) até carregarem em *Sair* ou o admin o
   revogar. Cada pessoa pode entrar em **vários dispositivos** e continua a ter
   apenas **um voto** por proposta. Os códigos expiram em 10 minutos, aceitam
@@ -70,10 +70,14 @@ migrações são aplicadas sozinhas em cada deploy.
   integração da base de dados; não é preciso escrevê-las à mão
 - `RESIDENT_CODE` → o código secreto dos residentes
 - `ADMIN_USER` e `ADMIN_PASSWORD` → credenciais da página `/admin`
-- `RESEND_API_KEY` → chave da [Resend](https://resend.com) para enviar os
-  códigos de entrada
-- `EMAIL_FROM` → remetente, num domínio verificado na Resend
-  (ex.: `CPD <codigos@exemplo.pt>`)
+- `GMAIL_USER` e `GMAIL_APP_PASSWORD` → conta Gmail que envia os códigos de
+  entrada e uma *palavra-passe de app* dessa conta
+  (https://myaccount.google.com/apppasswords — precisa da verificação em
+  2 passos ativa). Limite do Gmail: cerca de 500 emails por dia.
+- `EMAIL_FROM` (opcional) → nome do remetente, ex.: `CPD <conta@gmail.com>`
+- Alternativa com domínio próprio: `RESEND_API_KEY` (+ `EMAIL_FROM` num
+  domínio verificado na [Resend](https://resend.com)). Se o Gmail estiver
+  configurado, é o Gmail que envia.
 
 ## Limitações assumidas (simplicidade primeiro)
 
