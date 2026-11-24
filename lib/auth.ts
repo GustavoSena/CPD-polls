@@ -20,7 +20,8 @@ export function safeEqual(a: string, b: string): boolean {
 
 // Admins are members whose email is listed in ADMIN_EMAILS (comma-separated).
 // They sign in like any member, with an emailed code; there is no separate
-// admin password.
+// admin password. A personal /m/ link never grants admin access, because
+// such links can be forwarded: only a device signed in by email counts.
 export function adminEmails(): string[] {
   return (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -29,18 +30,25 @@ export function adminEmails(): string[] {
 }
 
 export async function isAdmin(): Promise<boolean> {
-  const member = await currentMember();
-  return Boolean(member?.email && adminEmails().includes(member.email));
+  const link = await currentLink();
+  return Boolean(
+    link?.fromLogin &&
+      link.member.email &&
+      adminEmails().includes(link.member.email)
+  );
 }
 
 // The member identified by this browser's cookie, or null. The cookie holds
 // one of the member's device tokens (from email sign-in or a personal link).
 export async function currentMember() {
+  return (await currentLink())?.member ?? null;
+}
+
+async function currentLink() {
   const token = (await cookies()).get(MEMBER_COOKIE)?.value;
   if (!token) return null;
-  const link = await prisma.memberLink.findUnique({
+  return prisma.memberLink.findUnique({
     where: { token },
     include: { member: true },
   });
-  return link?.member ?? null;
 }

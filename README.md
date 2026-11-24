@@ -33,7 +33,10 @@ remover pessoas, definir o email com que cada uma entra e ver ou revogar os
 seus dispositivos (e criar links pessoais para quem não tem email). Revogar um link (ex.: telemóvel perdido) não
 afeta os outros dispositivos dessa pessoa nem os votos que já deu. A página
 só abre para quem entrou com um email listado em `ADMIN_EMAILS`
-(separados por vírgulas). Esse email tem de pertencer a um membro da lista.
+(separados por vírgulas) — e só num dispositivo onde entrou com o código por
+email (um link pessoal `/m/…` nunca dá acesso à administração). Numa
+instalação nova, um email de `ADMIN_EMAILS` pode entrar mesmo sem estar na
+lista: fica criado como membro automaticamente.
 
 ## Correr localmente
 
