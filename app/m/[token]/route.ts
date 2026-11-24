@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { MEMBER_COOKIE } from "@/lib/auth";
+import { MEMBER_COOKIE, MEMBER_COOKIE_MAX_AGE } from "@/lib/auth";
 
 // One of a member's personal secret links. Visiting it marks this browser as
 // that member (cookie) and sends them to the proposals list. A member can have
@@ -20,7 +20,8 @@ export async function GET(
   res.cookies.set(MEMBER_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: MEMBER_COOKIE_MAX_AGE,
   });
   return res;
 }

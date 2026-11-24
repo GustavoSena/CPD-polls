@@ -27,24 +27,48 @@ model Proposal {
   memberVotes MemberVote[]
 }
 
-// A community member. Identified by personal secret links (/m/[token]),
-// distributed by the admin — no accounts, no passwords.
+// A community member. Signs in with a one-time code sent to their email;
+// each signed-in device gets its own MemberLink. No passwords. Members
+// without an email can still use a personal secret link (/m/[token]).
 model Member {
   id          String       @id @default(cuid())
   name        String
+  // Stored lowercased. Optional so members added before email login keep
+  // working through their links until the admin fills it in.
+  email       String?      @unique
   createdAt   DateTime     @default(now())
   links       MemberLink[]
+  loginCodes  LoginCode[]
   votes       MemberVote[]
   suggestions Suggestion[]
 }
 
-// One personal secret link. A member can hold several — one per device —
-// so the same person is recognized on phone, laptop, etc. Revoking one
-// link (e.g. a lost phone) leaves the member's other devices working.
+// One recognized device. Created when the member signs in with an email
+// code (the browser keeps the token in a cookie), or by the admin as a
+// personal secret link (/m/[token]). A member can hold several, so the same
+// person is recognized on phone, laptop, etc. Revoking one (e.g. a lost
+// phone) signs that device out and leaves the others working.
 model MemberLink {
   id        String   @id @default(cuid())
   token     String   @unique
   label     String   @default("")
+  // true when created by email sign-in (signing out deletes it); false for
+  // a link the admin created and handed out.
+  fromLogin Boolean  @default(false)
+  createdAt DateTime @default(now())
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  @@index([memberId])
+}
+
+// A pending one-time sign-in code. Only a hash of the code is stored; it
+// expires after a few minutes and allows a handful of wrong guesses.
+model LoginCode {
+  id        String   @id @default(cuid())
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
   createdAt DateTime @default(now())
   member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   memberId  String
