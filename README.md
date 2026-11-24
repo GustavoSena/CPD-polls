@@ -32,8 +32,8 @@ Em **`/admin`** (link no rodapé) gere-se a lista de membros: adicionar e
 remover pessoas, definir o email com que cada uma entra e ver ou revogar os
 seus dispositivos (e criar links pessoais para quem não tem email). Revogar um link (ex.: telemóvel perdido) não
 afeta os outros dispositivos dessa pessoa nem os votos que já deu. A página
-é protegida por utilizador e palavra-passe — `ADMIN_USER` e `ADMIN_PASSWORD`
-no `.env`.
+só abre para quem entrou com um email listado em `ADMIN_EMAILS`
+(separados por vírgulas). Esse email tem de pertencer a um membro da lista.
 
 ## Correr localmente
 
@@ -69,7 +69,7 @@ migrações são aplicadas sozinhas em cada deploy.
 - `POSTGRES_PRISMA_URL` e `POSTGRES_URL_NON_POOLING` → injetadas pela
   integração da base de dados; não é preciso escrevê-las à mão
 - `RESIDENT_CODE` → o código secreto dos residentes
-- `ADMIN_USER` e `ADMIN_PASSWORD` → credenciais da página `/admin`
+- `ADMIN_EMAILS` → email(s) de quem gere a página `/admin`
 - `GMAIL_USER` e `GMAIL_APP_PASSWORD` → conta Gmail que envia os códigos de
   entrada e uma *palavra-passe de app* dessa conta
   (https://myaccount.google.com/apppasswords — precisa da verificação em
