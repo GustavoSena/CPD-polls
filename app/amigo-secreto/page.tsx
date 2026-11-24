@@ -2,7 +2,11 @@ import Link from "next/link";
 import { currentMember } from "@/lib/auth";
 import { secretSantaViewFor } from "@/lib/secretSanta";
 import { Linkify } from "@/app/Linkify";
-import { addWishlistItem, removeWishlistItem } from "./actions";
+import {
+  addWishlistItem,
+  removeWishlistItem,
+  setWishlistImage,
+} from "./actions";
 import { SubmitButton } from "./SubmitButton";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   link: "Esse link não parece válido. Cola o endereço completo da página (https://…).",
   nota: "A nota é demasiado longa (máximo 300 caracteres).",
   limite: "A tua lista já tem o máximo de 20 desejos.",
+  imagem: "A imagem tem de ser JPG, PNG, WebP ou GIF, até 4 MB.",
 };
 
 type Item = {
@@ -60,12 +65,29 @@ function WishCard({ item, removable }: { item: Item; removable: boolean }) {
         </p>
       )}
       {removable && (
-        <form action={removeWishlistItem} className="wish-remove">
-          <input type="hidden" name="id" value={item.id} />
-          <button type="submit" className="option-remove">
-            Remover
-          </button>
-        </form>
+        <div className="wish-actions">
+          {!item.imageId && (
+            <form action={setWishlistImage} className="wish-image-form">
+              <input type="hidden" name="id" value={item.id} />
+              <input
+                type="file"
+                name="image"
+                aria-label="Imagem do presente"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                required
+              />
+              <button type="submit" className="option-add">
+                Guardar imagem
+              </button>
+            </form>
+          )}
+          <form action={removeWishlistItem}>
+            <input type="hidden" name="id" value={item.id} />
+            <button type="submit" className="option-remove">
+              Remover
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );
@@ -187,6 +209,20 @@ export default async function SecretSantaPage({
               maxLength={300}
               placeholder="Tamanho, cor, alternativa…"
             />
+          </div>
+          <div className="form-field">
+            <label htmlFor="wish-image">Imagem (opcional)</label>
+            <input
+              id="wish-image"
+              name="image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+            />
+            <p className="form-hint">
+              Tentamos ir buscar a imagem ao link. Algumas lojas (Amazon,
+              Worten, Fnac, Zara…) não deixam, por isso podes juntar uma
+              captura de ecrã ou foto do presente.
+            </p>
           </div>
           <SubmitButton idle="Adicionar à lista" pending="A ler o link…" />
         </form>

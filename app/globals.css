@@ -663,9 +663,29 @@ input[type="file"] {
   margin-top: 0.5rem;
 }
 
-.wish-remove {
-  margin-top: 0.4rem;
-  text-align: right;
+.wish-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.wish-actions > form:last-child {
+  margin-left: auto;
+}
+
+.wish-image-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.wish-image-form input[type="file"] {
+  max-width: 100%;
 }
 
 .wish-form {
