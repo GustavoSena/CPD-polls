@@ -2,49 +2,10 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import {
-  ADMIN_COOKIE,
-  adminSessionToken,
-  isAdmin,
-  normalizeEmail,
-  safeEqual,
-} from "@/lib/auth";
+import { isAdmin, normalizeEmail } from "@/lib/auth";
 import { drawPairs, MIN_PARTICIPANTS } from "@/lib/secretSanta";
-import type { FormState } from "@/app/actions";
-
-export async function adminLogin(
-  _prev: FormState,
-  formData: FormData
-): Promise<FormState> {
-  const { ADMIN_USER, ADMIN_PASSWORD } = process.env;
-  if (!ADMIN_USER || !ADMIN_PASSWORD) {
-    return {
-      error:
-        "Administração não configurada: define ADMIN_USER e ADMIN_PASSWORD no ambiente.",
-    };
-  }
-
-  const user = String(formData.get("user") ?? "");
-  const password = String(formData.get("password") ?? "");
-  if (!safeEqual(user, ADMIN_USER) || !safeEqual(password, ADMIN_PASSWORD)) {
-    return { error: "Utilizador ou palavra-passe incorretos." };
-  }
-
-  (await cookies()).set(ADMIN_COOKIE, adminSessionToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 30,
-  });
-  redirect("/admin");
-}
-
-export async function adminLogout(): Promise<void> {
-  (await cookies()).delete(ADMIN_COOKIE);
-  redirect("/admin");
-}
 
 function newToken(): string {
   return randomBytes(16).toString("base64url");
