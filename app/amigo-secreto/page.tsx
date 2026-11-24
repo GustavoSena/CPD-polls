@@ -4,8 +4,6 @@ import { secretSantaViewFor } from "@/lib/secretSanta";
 import { Linkify } from "@/app/Linkify";
 import {
   addWishlistItem,
-  joinSecretSanta,
-  leaveSecretSanta,
   removeWishlistItem,
   setWishlistImage,
 } from "./actions";
@@ -169,7 +167,8 @@ export default async function SecretSantaPage({
       <>
         <h1 className="section-title">Amigo secreto</h1>
         <p className="notice">
-          Para participar e preencher a tua lista de desejos, tens de{" "}
+          Para veres o amigo secreto e preencheres a tua lista de desejos,
+          tens de{" "}
           <Link href="/entrar">entrar com o teu email</Link> de membro.
         </p>
       </>
@@ -201,58 +200,36 @@ export default async function SecretSantaPage({
     </>
   );
 
-  // Sign-up phase: join, fill in the wishlist, wait for the draw.
+  if (!view.joined) {
+    return (
+      <>
+        {header}
+        <p className="notice">
+          Não fazes parte deste amigo secreto. Se achas que devias estar, fala
+          com quem gere a comunidade.
+        </p>
+      </>
+    );
+  }
+
+  // Before the draw: fill in the wishlist and wait.
   if (view.phase === "signup") {
-    if (!view.joined) {
-      return (
-        <>
-          {header}
-          <section className="card santa-reveal">
-            <p className="santa-reveal-label">Inscrições abertas</p>
-            <p className="proposal-description">
-              Inscreve-te e prepara a tua lista de desejos. Quando o sorteio
-              for feito, vais saber a quem dás o presente.
-            </p>
-            <form action={joinSecretSanta}>
-              <button type="submit" className="button">
-                Quero participar
-              </button>
-            </form>
-          </section>
-        </>
-      );
-    }
     return (
       <>
         {header}
         <section className="card santa-reveal">
-          <p className="santa-reveal-label">Inscrição feita</p>
+          <p className="santa-reveal-label">Estás na lista de participantes</p>
           <p className="proposal-description">
             O sorteio ainda não foi feito. Entretanto, vai preenchendo a tua
-            lista de desejos.
+            lista de desejos — quando for feito, vais saber a quem dás o
+            presente.
           </p>
-          <form action={leaveSecretSanta}>
-            <button type="submit" className="option-remove">
-              Já não quero participar (apaga a minha lista)
-            </button>
-          </form>
         </section>
         <OwnWishlist items={view.ownItems} />
       </>
     );
   }
 
-  if (!view.joined) {
-    return (
-      <>
-        {header}
-        <p className="notice">
-          O sorteio já foi feito e não fazes parte dele. Se achas que devias
-          estar, fala com quem gere a comunidade.
-        </p>
-      </>
-    );
-  }
 
   return (
     <>

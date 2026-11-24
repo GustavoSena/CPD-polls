@@ -12,7 +12,9 @@ import {
   removeLink,
   removeMember,
   setMemberEmail,
+  setSecretSantaParticipants,
 } from "./actions";
+import { MemberPicker } from "./MemberPicker";
 import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import { CopyButton } from "./CopyButton";
 import { ProposalsAdmin } from "./ProposalsAdmin";
@@ -76,6 +78,7 @@ export default async function AdminPage({
   });
   const joinedIds = new Set(santa?.participants.map((p) => p.memberId));
   const withWishes = new Set(santa?.wishlist.map((w) => w.memberId)).size;
+  const pickable = members.map((m) => ({ id: m.id, name: m.name }));
 
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
@@ -243,40 +246,29 @@ export default async function AdminPage({
         ) : santa ? (
           <>
             <p className="proposal-description">
-              <strong>{santa.name}</strong>: inscrições abertas.{" "}
-              {joinedIds.size} inscritos, {withWishes} com desejos na lista.
-              Os membros inscrevem-se e preenchem a lista em{" "}
-              <Link href="/amigo-secreto">Amigo secreto</Link>. Quando
-              quiseres, faz o sorteio.
+              <strong>{santa.name}</strong>: à espera do sorteio.{" "}
+              {joinedIds.size} participantes, {withWishes} já com desejos na
+              lista. Cada participante preenche a sua lista em{" "}
+              <Link href="/amigo-secreto">Amigo secreto</Link>.
             </p>
-            <form action={drawSecretSanta}>
+            <form action={setSecretSantaParticipants}>
               <input type="hidden" name="id" value={santa.id} />
-              <fieldset className="form-field santa-participants">
-                <legend>Participantes no sorteio</legend>
-                {members.map((m) => (
-                  <label key={m.id} className="santa-participant">
-                    <input
-                      type="checkbox"
-                      name="memberId"
-                      value={m.id}
-                      defaultChecked={joinedIds.has(m.id)}
-                    />
-                    {m.name}
-                    {joinedIds.has(m.id) ? "" : " (não inscrito)"}
-                  </label>
-                ))}
-              </fieldset>
+              <MemberPicker members={pickable} initial={[...joinedIds]} />
               <p className="form-hint">
-                Os inscritos já vêm marcados. Podes juntar ou tirar pessoas
-                antes de sortear. Depois do sorteio não há inscrições novas.
+                Podes mudar a lista até ao sorteio. Quem tirares perde a sua
+                lista de desejos.
               </p>
-              <div className="santa-admin-actions">
+              <button type="submit" className="option-add">
+                Guardar participantes
+              </button>
+            </form>
+            <div className="santa-admin-actions">
+              <form action={drawSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
                 <button className="button" type="submit">
                   Fazer sorteio
                 </button>
-              </div>
-            </form>
-            <div className="santa-admin-actions">
+              </form>
               <form action={cancelSecretSanta}>
                 <input type="hidden" name="id" value={santa.id} />
                 <button type="submit" className="option-remove">
@@ -288,8 +280,8 @@ export default async function AdminPage({
         ) : (
           <form action={createSecretSanta}>
             <p className="proposal-description">
-              Cria o evento para abrir as inscrições: aparece o separador
-              Amigo secreto, e cada membro pode inscrever-se e preencher a sua
+              Cria o evento e escolhe quem participa. Aparece o separador
+              Amigo secreto, e cada participante pode logo preencher a sua
               lista de desejos. O sorteio fazes tu mais tarde, aqui.
             </p>
             <div className="form-field">
@@ -311,6 +303,10 @@ export default async function AdminPage({
                 placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
               />
             </div>
+            <MemberPicker members={pickable} />
+            <p className="form-hint">
+              Pelo menos {MIN_PARTICIPANTS} pessoas.
+            </p>
             <button className="button" type="submit">
               Criar evento
             </button>

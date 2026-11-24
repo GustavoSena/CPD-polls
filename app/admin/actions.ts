@@ -77,41 +77,99 @@ export async function removeLink(formData: FormData): Promise<void> {
   revalidatePath("/admin");
 }
 
-// Creates a Secret Santa round in its sign-up phase: members join and fill
-// in their wishlists, and the admin runs the draw later.
+// The chosen members that still exist, from repeated `memberId` fields.
+async function pickedMembers(formData: FormData): Promise<string[]> {
+  const requested = [...new Set(formData.getAll("memberId").map(String))];
+  const members = await prisma.member.findMany({
+    where: { id: { in: requested } },
+    select: { id: true },
+  });
+  return members.map((m) => m.id);
+}
+
+// Creates a Secret Santa round with the participants the admin picked. They
+// can fill in their wishlists right away; the admin runs the draw later.
 export async function createSecretSanta(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
 
   const name = String(formData.get("name") ?? "").trim() || "Amigo secreto";
   const details = String(formData.get("details") ?? "").trim().slice(0, 1000);
+  const ids = await pickedMembers(formData);
+  if (ids.length < MIN_PARTICIPANTS) {
+    redirect("/admin?erro=amigo-secreto-poucos#amigo-secreto");
+  }
   if (await prisma.secretSantaEvent.findFirst({ where: { active: true } })) {
-    redirect("/admin?erro=amigo-secreto-ativo");
+    redirect("/admin?erro=amigo-secreto-ativo#amigo-secreto");
   }
 
-  await prisma.secretSantaEvent.create({ data: { name, details } });
+  await prisma.secretSantaEvent.create({
+    data: {
+      name,
+      details,
+      participants: { create: ids.map((memberId) => ({ memberId })) },
+    },
+  });
   revalidatePath("/", "layout");
   redirect("/admin#amigo-secreto");
 }
 
-// Runs the draw. The ticked members become the participants: people who
-// signed up are ticked by default, and the admin can add or leave out
-// anyone. The result is only ever shown to each giver.
-export async function drawSecretSanta(formData: FormData): Promise<void> {
+// Changes who takes part, before the draw. Anyone removed loses their
+// wishlist for this event.
+export async function setSecretSantaParticipants(
+  formData: FormData
+): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
 
   const id = String(formData.get("id") ?? "");
   const event = await prisma.secretSantaEvent.findUnique({ where: { id } });
   if (!event || !event.active || event.drawnAt) redirect("/admin");
 
-  const requested = new Set(formData.getAll("memberId").map(String));
-  const members = await prisma.member.findMany({
-    where: { id: { in: [...requested] } },
-    select: { id: true },
-  });
-  if (members.length < MIN_PARTICIPANTS) {
+  const ids = await pickedMembers(formData);
+  if (ids.length < MIN_PARTICIPANTS) {
     redirect("/admin?erro=amigo-secreto-poucos#amigo-secreto");
   }
-  const ids = members.map((m) => m.id);
+
+  const dropped = await prisma.wishlistItem.findMany({
+    where: { eventId: id, memberId: { notIn: ids } },
+    select: { imageId: true },
+  });
+  await prisma.$transaction([
+    prisma.secretSantaParticipant.deleteMany({
+      where: { eventId: id, memberId: { notIn: ids } },
+    }),
+    prisma.wishlistItem.deleteMany({
+      where: { eventId: id, memberId: { notIn: ids } },
+    }),
+    prisma.media.deleteMany({
+      where: {
+        id: { in: dropped.flatMap((i) => (i.imageId ? [i.imageId] : [])) },
+      },
+    }),
+    prisma.secretSantaParticipant.createMany({
+      data: ids.map((memberId) => ({ eventId: id, memberId })),
+      skipDuplicates: true,
+    }),
+  ]);
+  revalidatePath("/", "layout");
+  redirect("/admin#amigo-secreto");
+}
+
+// Runs the draw among the event's participants. The result is only ever
+// shown to each giver.
+export async function drawSecretSanta(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+
+  const id = String(formData.get("id") ?? "");
+  const event = await prisma.secretSantaEvent.findUnique({
+    where: { id },
+    include: { participants: { select: { memberId: true } } },
+  });
+  if (!event || !event.active || event.drawnAt) redirect("/admin");
+
+  const ids = event.participants.map((p) => p.memberId);
+  if (ids.length < MIN_PARTICIPANTS) {
+    redirect("/admin?erro=amigo-secreto-poucos#amigo-secreto");
+  }
 
   // drawnAt: null in the where makes a double submit draw only once.
   const claimed = await prisma.secretSantaEvent.updateMany({
@@ -119,18 +177,9 @@ export async function drawSecretSanta(formData: FormData): Promise<void> {
     data: { drawnAt: new Date() },
   });
   if (claimed.count === 1) {
-    await prisma.$transaction([
-      prisma.secretSantaParticipant.deleteMany({
-        where: { eventId: id, memberId: { notIn: ids } },
-      }),
-      prisma.secretSantaParticipant.createMany({
-        data: ids.map((memberId) => ({ eventId: id, memberId })),
-        skipDuplicates: true,
-      }),
-      prisma.secretSantaAssignment.createMany({
-        data: drawPairs(ids).map((p) => ({ ...p, eventId: id })),
-      }),
-    ]);
+    await prisma.secretSantaAssignment.createMany({
+      data: drawPairs(ids).map((p) => ({ ...p, eventId: id })),
+    });
   }
   revalidatePath("/", "layout");
   redirect("/admin#amigo-secreto");
