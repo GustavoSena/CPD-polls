@@ -1,13 +1,36 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Fredoka, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
+import { SiteNav } from "./SiteNav";
 import "./theme.css";
 import "./globals.css";
+
+// Rounded display face echoes the logo lettering; Inter for everything else.
+// Exposed as CSS variables consumed by app/theme.css.
+const display = Fredoka({
+  subsets: ["latin"],
+  weight: "variable",
+  variable: "--font-display",
+  display: "swap",
+});
+const sans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "CPD · A Casa do Povo",
   description:
     "Votações da Comunidade Pouco Democrática sobre A Casa do Povo.",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4efe6" },
+    { media: "(prefers-color-scheme: dark)", color: "#171411" },
+  ],
 };
 
 export default function RootLayout({
@@ -16,11 +39,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt">
+    <html lang="pt" className={`${display.variable} ${sans.variable}`}>
       <body>
         <header className="site-header">
           <div className="site-header-inner">
-            <div className="site-brand">
+            <Link href="/" className="site-brand">
               {/* Decorative: the title next to it already names the community. */}
               <Image
                 className="site-logo"
@@ -30,25 +53,19 @@ export default function RootLayout({
                 height={44}
                 priority
               />
-              <div className="site-title">
-                <Link href="/">CPD · A Casa do Povo</Link>
+              <span className="site-title">
+                CPD · A Casa do Povo
                 <span className="site-subtitle">
                   Comunidade Pouco Democrática
                 </span>
-              </div>
-            </div>
-            <nav className="site-nav">
-              <Link href="/suggestions" className="nav-link">
-                Sugestões
-              </Link>
-              <Link href="/new" className="nav-link">
-                Nova proposta
-              </Link>
-            </nav>
+              </span>
+            </Link>
+            <SiteNav />
           </div>
         </header>
         <main className="container">{children}</main>
         <footer className="site-footer">
+          <span>Comunidade Pouco Democrática · votos anónimos</span>
           <Link href="/admin">Administração</Link>
         </footer>
       </body>

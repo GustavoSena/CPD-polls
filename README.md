@@ -49,7 +49,9 @@ npm run dev                # abre http://localhost:3000
 
 Todo o aspeto do site (cores, tipografia, cantos, sombras) está em
 **`app/theme.css`** como variáveis CSS. Muda os valores aí e o site inteiro
-acompanha. A estrutura/layout está em `app/globals.css`, e os textos estão
+acompanha (incluindo o modo escuro, que segue a preferência do sistema).
+As fontes (Fredoka nos títulos, Inter no texto) são carregadas em
+`app/layout.tsx`. A estrutura/layout está em `app/globals.css`, e os textos estão
 nos ficheiros de `app/`.
 
 ## Publicar (Vercel + Vercel Postgres)

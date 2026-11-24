@@ -41,7 +41,7 @@ export default async function Home({
         </p>
       )}
       {member && (
-        <p className="notice">
+        <p className="notice notice-success">
           Olá, {member.name}! Este browser está reconhecido — já podes votar.
         </p>
       )}
@@ -51,7 +51,7 @@ export default async function Home({
         <p className="empty">Não há propostas abertas de momento.</p>
       )}
       {open.map((p) => (
-        <article className="card" key={p.id}>
+        <article className="card card-clickable" key={p.id}>
           <h2>
             <Link href={`/proposal/${p.id}`}>{p.title}</Link>
           </h2>
@@ -81,7 +81,7 @@ export default async function Home({
         const max = Math.max(...counts.map((c) => c.count));
         const winners = counts.filter((c) => c.count === max && max > 0);
         return (
-          <article className="card" key={p.id}>
+          <article className="card card-clickable" key={p.id}>
             <h2>
               <Link href={`/proposal/${p.id}`}>{p.title}</Link>
             </h2>
