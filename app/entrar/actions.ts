@@ -5,6 +5,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import {
+  adminEmails,
   LOGIN_COOKIE,
   MEMBER_COOKIE,
   MEMBER_COOKIE_MAX_AGE,
@@ -62,7 +63,15 @@ export async function requestLoginCode(
     return { error: "Escreve um endereço de email válido." };
   }
 
-  const member = await prisma.member.findUnique({ where: { email } });
+  let member = await prisma.member.findUnique({ where: { email } });
+  // First-time setup: an address in ADMIN_EMAILS may sign in even before
+  // anyone added it, so a new installation can get its first admin. It
+  // becomes a member named after the start of the email.
+  if (!member && adminEmails().includes(email)) {
+    member = await prisma.member.create({
+      data: { email, name: email.split("@")[0] },
+    });
+  }
   if (!member) {
     return {
       error:
