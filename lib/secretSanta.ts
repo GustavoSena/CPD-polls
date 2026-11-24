@@ -27,32 +27,47 @@ export async function activeEvent() {
   });
 }
 
-// What one member can see of the active event: their own wishlist and the
-// wishlist of the person they give to. Never anything about anyone else.
+export async function isParticipant(eventId: string, memberId: string) {
+  const row = await prisma.secretSantaParticipant.findUnique({
+    where: { eventId_memberId: { eventId, memberId } },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
+// What one member can see of the active event: their own wishlist and, once
+// drawn, the wishlist of the person they give to. Never anything else.
 export async function secretSantaViewFor(memberId: string) {
   const event = await activeEvent();
   if (!event) return { event: null } as const;
+
+  const joined = await isParticipant(event.id, memberId);
+  const ownItems = joined
+    ? await prisma.wishlistItem.findMany({
+        where: { eventId: event.id, memberId },
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
+
+  if (!event.drawnAt) {
+    return { event, phase: "signup", joined, ownItems } as const;
+  }
 
   const assignment = await prisma.secretSantaAssignment.findUnique({
     where: { eventId_giverId: { eventId: event.id, giverId: memberId } },
     include: { receiver: { select: { id: true, name: true } } },
   });
-  if (!assignment) return { event, participant: false } as const;
+  if (!assignment) return { event, phase: "drawn", joined: false } as const;
 
-  const [ownItems, receiverItems] = await Promise.all([
-    prisma.wishlistItem.findMany({
-      where: { eventId: event.id, memberId },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.wishlistItem.findMany({
-      where: { eventId: event.id, memberId: assignment.receiver.id },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const receiverItems = await prisma.wishlistItem.findMany({
+    where: { eventId: event.id, memberId: assignment.receiver.id },
+    orderBy: { createdAt: "asc" },
+  });
 
   return {
     event,
-    participant: true,
+    phase: "drawn",
+    joined: true,
     receiver: assignment.receiver,
     ownItems,
     receiverItems,

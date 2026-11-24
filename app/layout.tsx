@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { MemberNav } from "./MemberNav";
+import { SecretSantaNavLink } from "./SecretSantaNavLink";
 import "./theme.css";
 import "./globals.css";
 
@@ -39,9 +40,7 @@ export default function RootLayout({
               </div>
             </div>
             <nav className="site-nav">
-              <Link href="/amigo-secreto" className="nav-link">
-                Amigo secreto
-              </Link>
+              <SecretSantaNavLink />
               <Link href="/suggestions" className="nav-link">
                 Sugestões
               </Link>

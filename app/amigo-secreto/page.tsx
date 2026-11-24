@@ -4,6 +4,8 @@ import { secretSantaViewFor } from "@/lib/secretSanta";
 import { Linkify } from "@/app/Linkify";
 import {
   addWishlistItem,
+  joinSecretSanta,
+  leaveSecretSanta,
   removeWishlistItem,
   setWishlistImage,
 } from "./actions";
@@ -93,6 +95,67 @@ function WishCard({ item, removable }: { item: Item; removable: boolean }) {
   );
 }
 
+type OwnItem = Item;
+
+function OwnWishlist({ items }: { items: OwnItem[] }) {
+  return (
+  <section className="card">
+    <h2>A tua lista de desejos</h2>
+    <p className="form-hint">
+      Só quem te sair no sorteio consegue ver esta lista.
+    </p>
+
+    {items.length > 0 && (
+      <div className="wish-list">
+        {items.map((item) => (
+          <WishCard key={item.id} item={item} removable />
+        ))}
+      </div>
+    )}
+
+    <form action={addWishlistItem} className="wish-form">
+      <div className="form-field">
+        <label htmlFor="wish-url">Link do presente</label>
+        <input
+          id="wish-url"
+          name="url"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          required
+          placeholder="https://…"
+        />
+      </div>
+      <div className="form-field">
+        <label htmlFor="wish-note">Nota (opcional)</label>
+        <input
+          id="wish-note"
+          name="note"
+          type="text"
+          maxLength={300}
+          placeholder="Tamanho, cor, alternativa…"
+        />
+      </div>
+      <div className="form-field">
+        <label htmlFor="wish-image">Imagem (opcional)</label>
+        <input
+          id="wish-image"
+          name="image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+        />
+        <p className="form-hint">
+          Tentamos ir buscar a imagem ao link. Algumas lojas (Amazon,
+          Worten, Fnac, Zara…) não deixam, por isso podes juntar uma
+          captura de ecrã ou foto do presente.
+        </p>
+      </div>
+      <SubmitButton idle="Adicionar à lista" pending="A ler o link…" />
+    </form>
+  </section>
+  );
+}
+
 export default async function SecretSantaPage({
   searchParams,
 }: {
@@ -106,8 +169,7 @@ export default async function SecretSantaPage({
       <>
         <h1 className="section-title">Amigo secreto</h1>
         <p className="notice">
-          Para ver a quem vais dar um presente e preencher a tua lista de
-          desejos, tens de{" "}
+          Para participar e preencher a tua lista de desejos, tens de{" "}
           <Link href="/entrar">entrar com o teu email</Link> de membro.
         </p>
       </>
@@ -125,19 +187,7 @@ export default async function SecretSantaPage({
     );
   }
 
-  if (!view.participant) {
-    return (
-      <>
-        <h1 className="section-title">{view.event.name}</h1>
-        <p className="notice">
-          Não fazes parte deste sorteio. Se achas que devias estar, fala com
-          quem gere a comunidade.
-        </p>
-      </>
-    );
-  }
-
-  return (
+  const header = (
     <>
       <h1 className="section-title">{view.event.name}</h1>
       {view.event.details && (
@@ -145,10 +195,68 @@ export default async function SecretSantaPage({
           <Linkify text={view.event.details} />
         </p>
       )}
-
       {erro && ERROR_MESSAGES[erro] && (
         <p className="form-error">{ERROR_MESSAGES[erro]}</p>
       )}
+    </>
+  );
+
+  // Sign-up phase: join, fill in the wishlist, wait for the draw.
+  if (view.phase === "signup") {
+    if (!view.joined) {
+      return (
+        <>
+          {header}
+          <section className="card santa-reveal">
+            <p className="santa-reveal-label">Inscrições abertas</p>
+            <p className="proposal-description">
+              Inscreve-te e prepara a tua lista de desejos. Quando o sorteio
+              for feito, vais saber a quem dás o presente.
+            </p>
+            <form action={joinSecretSanta}>
+              <button type="submit" className="button">
+                Quero participar
+              </button>
+            </form>
+          </section>
+        </>
+      );
+    }
+    return (
+      <>
+        {header}
+        <section className="card santa-reveal">
+          <p className="santa-reveal-label">Inscrição feita</p>
+          <p className="proposal-description">
+            O sorteio ainda não foi feito. Entretanto, vai preenchendo a tua
+            lista de desejos.
+          </p>
+          <form action={leaveSecretSanta}>
+            <button type="submit" className="option-remove">
+              Já não quero participar (apaga a minha lista)
+            </button>
+          </form>
+        </section>
+        <OwnWishlist items={view.ownItems} />
+      </>
+    );
+  }
+
+  if (!view.joined) {
+    return (
+      <>
+        {header}
+        <p className="notice">
+          O sorteio já foi feito e não fazes parte dele. Se achas que devias
+          estar, fala com quem gere a comunidade.
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {header}
 
       <section className="card santa-reveal">
         <p className="santa-reveal-label">Vais dar um presente a</p>
@@ -173,60 +281,7 @@ export default async function SecretSantaPage({
         )}
       </section>
 
-      <section className="card">
-        <h2>A tua lista de desejos</h2>
-        <p className="form-hint">
-          Só a pessoa que te tirou consegue ver esta lista.
-        </p>
-
-        {view.ownItems.length > 0 && (
-          <div className="wish-list">
-            {view.ownItems.map((item) => (
-              <WishCard key={item.id} item={item} removable />
-            ))}
-          </div>
-        )}
-
-        <form action={addWishlistItem} className="wish-form">
-          <div className="form-field">
-            <label htmlFor="wish-url">Link do presente</label>
-            <input
-              id="wish-url"
-              name="url"
-              type="text"
-              inputMode="url"
-              autoComplete="off"
-              required
-              placeholder="https://…"
-            />
-          </div>
-          <div className="form-field">
-            <label htmlFor="wish-note">Nota (opcional)</label>
-            <input
-              id="wish-note"
-              name="note"
-              type="text"
-              maxLength={300}
-              placeholder="Tamanho, cor, alternativa…"
-            />
-          </div>
-          <div className="form-field">
-            <label htmlFor="wish-image">Imagem (opcional)</label>
-            <input
-              id="wish-image"
-              name="image"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-            />
-            <p className="form-hint">
-              Tentamos ir buscar a imagem ao link. Algumas lojas (Amazon,
-              Worten, Fnac, Zara…) não deixam, por isso podes juntar uma
-              captura de ecrã ou foto do presente.
-            </p>
-          </div>
-          <SubmitButton idle="Adicionar à lista" pending="A ler o link…" />
-        </form>
-      </section>
+      <OwnWishlist items={view.ownItems} />
     </>
   );
 }

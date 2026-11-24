@@ -116,35 +116,63 @@ export async function removeLink(formData: FormData): Promise<void> {
   revalidatePath("/admin");
 }
 
-// Starts a Secret Santa round and draws the pairs right away. The admin
-// picks who takes part; the result is only ever shown to each giver.
-export async function startSecretSanta(formData: FormData): Promise<void> {
+// Creates a Secret Santa round in its sign-up phase: members join and fill
+// in their wishlists, and the admin runs the draw later.
+export async function createSecretSanta(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
 
   const name = String(formData.get("name") ?? "").trim() || "Amigo secreto";
   const details = String(formData.get("details") ?? "").trim().slice(0, 1000);
+  if (await prisma.secretSantaEvent.findFirst({ where: { active: true } })) {
+    redirect("/admin?erro=amigo-secreto-ativo");
+  }
+
+  await prisma.secretSantaEvent.create({ data: { name, details } });
+  revalidatePath("/", "layout");
+  redirect("/admin#amigo-secreto");
+}
+
+// Runs the draw. The ticked members become the participants: people who
+// signed up are ticked by default, and the admin can add or leave out
+// anyone. The result is only ever shown to each giver.
+export async function drawSecretSanta(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+
+  const id = String(formData.get("id") ?? "");
+  const event = await prisma.secretSantaEvent.findUnique({ where: { id } });
+  if (!event || !event.active || event.drawnAt) redirect("/admin");
+
   const requested = new Set(formData.getAll("memberId").map(String));
   const members = await prisma.member.findMany({
     where: { id: { in: [...requested] } },
     select: { id: true },
   });
   if (members.length < MIN_PARTICIPANTS) {
-    redirect("/admin?erro=amigo-secreto-poucos");
+    redirect("/admin?erro=amigo-secreto-poucos#amigo-secreto");
   }
-  if (await prisma.secretSantaEvent.findFirst({ where: { active: true } })) {
-    redirect("/admin?erro=amigo-secreto-ativo");
-  }
+  const ids = members.map((m) => m.id);
 
-  await prisma.secretSantaEvent.create({
-    data: {
-      name,
-      details,
-      assignments: { create: drawPairs(members.map((m) => m.id)) },
-    },
+  // drawnAt: null in the where makes a double submit draw only once.
+  const claimed = await prisma.secretSantaEvent.updateMany({
+    where: { id, drawnAt: null },
+    data: { drawnAt: new Date() },
   });
-  revalidatePath("/admin");
-  revalidatePath("/amigo-secreto");
-  redirect("/admin");
+  if (claimed.count === 1) {
+    await prisma.$transaction([
+      prisma.secretSantaParticipant.deleteMany({
+        where: { eventId: id, memberId: { notIn: ids } },
+      }),
+      prisma.secretSantaParticipant.createMany({
+        data: ids.map((memberId) => ({ eventId: id, memberId })),
+        skipDuplicates: true,
+      }),
+      prisma.secretSantaAssignment.createMany({
+        data: drawPairs(ids).map((p) => ({ ...p, eventId: id })),
+      }),
+    ]);
+  }
+  revalidatePath("/", "layout");
+  redirect("/admin#amigo-secreto");
 }
 
 // Ends the round: it disappears for members, but the data is kept.
@@ -155,9 +183,8 @@ export async function endSecretSanta(formData: FormData): Promise<void> {
     where: { id },
     data: { active: false },
   });
-  revalidatePath("/admin");
-  revalidatePath("/amigo-secreto");
-  redirect("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin#amigo-secreto");
 }
 
 // Deletes the round entirely (pairs and wishlists), e.g. to redo the draw
@@ -175,7 +202,6 @@ export async function cancelSecretSanta(formData: FormData): Promise<void> {
       where: { id: { in: items.map((i) => i.imageId!) } },
     }),
   ]);
-  revalidatePath("/admin");
-  revalidatePath("/amigo-secreto");
-  redirect("/admin");
+  revalidatePath("/", "layout");
+  redirect("/admin#amigo-secreto");
 }

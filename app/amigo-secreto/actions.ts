@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentMember } from "@/lib/auth";
-import { activeEvent } from "@/lib/secretSanta";
+import { activeEvent, isParticipant } from "@/lib/secretSanta";
 import { fetchLinkPreview, parsePublicUrl } from "@/lib/linkPreview";
 
 const PAGE = "/amigo-secreto";
@@ -35,11 +35,7 @@ export async function addWishlistItem(formData: FormData): Promise<void> {
   const event = await activeEvent();
   if (!event) redirect(PAGE);
 
-  const isParticipant = await prisma.secretSantaAssignment.findUnique({
-    where: { eventId_giverId: { eventId: event.id, giverId: member.id } },
-    select: { id: true },
-  });
-  if (!isParticipant) redirect(PAGE);
+  if (!(await isParticipant(event.id, member.id))) redirect(PAGE);
 
   let raw = String(formData.get("url") ?? "").trim();
   if (raw && !/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
@@ -121,6 +117,52 @@ export async function setWishlistImage(formData: FormData): Promise<void> {
     ]);
   }
 
+  revalidatePath(PAGE);
+  redirect(PAGE);
+}
+
+// Signs the current member up for the active event, before the draw.
+export async function joinSecretSanta(): Promise<void> {
+  const member = await currentMember();
+  if (!member) redirect(`${PAGE}?erro=membro`);
+  const event = await activeEvent();
+  if (event && !event.drawnAt) {
+    await prisma.secretSantaParticipant.upsert({
+      where: { eventId_memberId: { eventId: event.id, memberId: member.id } },
+      create: { eventId: event.id, memberId: member.id },
+      update: {},
+    });
+  }
+  revalidatePath(PAGE);
+  redirect(PAGE);
+}
+
+// Leaves the active event before the draw. Their wishlist is deleted too.
+export async function leaveSecretSanta(): Promise<void> {
+  const member = await currentMember();
+  if (!member) redirect(`${PAGE}?erro=membro`);
+  const event = await activeEvent();
+  if (event && !event.drawnAt) {
+    const items = await prisma.wishlistItem.findMany({
+      where: { eventId: event.id, memberId: member.id },
+      select: { imageId: true },
+    });
+    await prisma.$transaction([
+      prisma.secretSantaParticipant.deleteMany({
+        where: { eventId: event.id, memberId: member.id },
+      }),
+      prisma.wishlistItem.deleteMany({
+        where: { eventId: event.id, memberId: member.id },
+      }),
+      prisma.media.deleteMany({
+        where: {
+          id: {
+            in: items.flatMap((i) => (i.imageId ? [i.imageId] : [])),
+          },
+        },
+      }),
+    ]);
+  }
   revalidatePath(PAGE);
   redirect(PAGE);
 }

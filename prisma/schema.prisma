@@ -45,6 +45,7 @@ model Member {
   givingTo      SecretSantaAssignment[] @relation("giver")
   receivingFrom SecretSantaAssignment[] @relation("receiver")
   wishlistItems WishlistItem[]
+  secretSantas  SecretSantaParticipant[]
 }
 
 // One recognized device. Created when the member signs in with an email
@@ -134,20 +135,35 @@ model Vote {
   optionId   String
 }
 
-// A Secret Santa round ("Amigo secreto"), started by the admin. The draw
-// happens when the event is created; only one event is active at a time.
-// The admin never sees who gives to whom — only each giver does.
+// A Secret Santa round ("Amigo secreto"), created by the admin. While
+// drawnAt is null, members sign up and fill in their wishlists; the admin
+// then runs the draw. Only one event is active at a time. The admin never
+// sees who gives to whom — only each giver does.
 model SecretSantaEvent {
-  id          String                  @id @default(cuid())
-  name        String
+  id           String                   @id @default(cuid())
+  name         String
   // Free-form note from the admin, e.g. budget or exchange date.
-  details     String                  @default("")
-  active      Boolean                 @default(true)
-  createdAt   DateTime                @default(now())
-  assignments SecretSantaAssignment[]
-  wishlist    WishlistItem[]
+  details      String                   @default("")
+  active       Boolean                  @default(true)
+  createdAt    DateTime                 @default(now())
+  drawnAt      DateTime?
+  participants SecretSantaParticipant[]
+  assignments  SecretSantaAssignment[]
+  wishlist     WishlistItem[]
 
   @@index([active])
+}
+
+// A member who signed up for an event (before the draw).
+model SecretSantaParticipant {
+  id        String           @id @default(cuid())
+  createdAt DateTime         @default(now())
+  event     SecretSantaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  member    Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+
+  @@unique([eventId, memberId])
 }
 
 // One drawn pair: giver gives a gift to receiver. Each participant appears

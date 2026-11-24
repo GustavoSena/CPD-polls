@@ -7,11 +7,12 @@ import {
   addMember,
   adminLogout,
   cancelSecretSanta,
+  createSecretSanta,
+  drawSecretSanta,
   endSecretSanta,
   removeLink,
   removeMember,
   setMemberEmail,
-  startSecretSanta,
 } from "./actions";
 import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import { AdminLoginForm } from "./AdminLoginForm";
@@ -56,15 +57,16 @@ export default async function AdminPage({
     include: { links: { orderBy: { createdAt: "asc" } } },
   });
 
-  // Only counts are loaded for the admin — never who drew whom.
+  // Who signed up and counts only — never who drew whom.
   const santa = await prisma.secretSantaEvent.findFirst({
     where: { active: true },
     orderBy: { createdAt: "desc" },
     include: {
-      _count: { select: { assignments: true } },
+      participants: { select: { memberId: true } },
       wishlist: { select: { memberId: true } },
     },
   });
+  const joinedIds = new Set(santa?.participants.map((p) => p.memberId));
   const withWishes = new Set(santa?.wishlist.map((w) => w.memberId)).size;
 
   const h = await headers();
@@ -211,14 +213,14 @@ export default async function AdminPage({
           <p className="form-error">{ERROR_MESSAGES[erro]}</p>
         )}
 
-        {santa ? (
+        {santa && santa.drawnAt ? (
           <>
             <p className="proposal-description">
-              <strong>{santa.name}</strong> está a decorrer, com{" "}
-              {santa._count.assignments} participantes.{" "}
-              {withWishes} já adicionaram desejos à lista. Cada pessoa vê a
-              quem dá o presente em <Link href="/amigo-secreto">Amigo
-              secreto</Link> — os pares não aparecem aqui.
+              <strong>{santa.name}</strong>: sorteio feito, com{" "}
+              {joinedIds.size} participantes. {withWishes} têm desejos na
+              lista. Cada pessoa vê a quem dá o presente em{" "}
+              <Link href="/amigo-secreto">Amigo secreto</Link> — os pares não
+              aparecem aqui.
             </p>
             <div className="santa-admin-actions">
               <form action={endSecretSanta}>
@@ -235,12 +237,57 @@ export default async function AdminPage({
               </form>
             </div>
           </>
-        ) : (
-          <form action={startSecretSanta}>
+        ) : santa ? (
+          <>
             <p className="proposal-description">
-              Escolhe quem participa e faz o sorteio. Cada pessoa fica a saber
-              só a quem dá o presente, e pode preencher uma lista de desejos
-              que apenas quem a tirou consegue ver.
+              <strong>{santa.name}</strong>: inscrições abertas.{" "}
+              {joinedIds.size} inscritos, {withWishes} com desejos na lista.
+              Os membros inscrevem-se e preenchem a lista em{" "}
+              <Link href="/amigo-secreto">Amigo secreto</Link>. Quando
+              quiseres, faz o sorteio.
+            </p>
+            <form action={drawSecretSanta}>
+              <input type="hidden" name="id" value={santa.id} />
+              <fieldset className="form-field santa-participants">
+                <legend>Participantes no sorteio</legend>
+                {members.map((m) => (
+                  <label key={m.id} className="santa-participant">
+                    <input
+                      type="checkbox"
+                      name="memberId"
+                      value={m.id}
+                      defaultChecked={joinedIds.has(m.id)}
+                    />
+                    {m.name}
+                    {joinedIds.has(m.id) ? "" : " (não inscrito)"}
+                  </label>
+                ))}
+              </fieldset>
+              <p className="form-hint">
+                Os inscritos já vêm marcados. Podes juntar ou tirar pessoas
+                antes de sortear. Depois do sorteio não há inscrições novas.
+              </p>
+              <div className="santa-admin-actions">
+                <button className="button" type="submit">
+                  Fazer sorteio
+                </button>
+              </div>
+            </form>
+            <div className="santa-admin-actions">
+              <form action={cancelSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="option-remove">
+                  Cancelar evento e apagar listas
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <form action={createSecretSanta}>
+            <p className="proposal-description">
+              Cria o evento para abrir as inscrições: aparece o separador
+              Amigo secreto, e cada membro pode inscrever-se e preencher a sua
+              lista de desejos. O sorteio fazes tu mais tarde, aqui.
             </p>
             <div className="form-field">
               <label htmlFor="santa-name">Nome</label>
@@ -261,22 +308,8 @@ export default async function AdminPage({
                 placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
               />
             </div>
-            <fieldset className="form-field santa-participants">
-              <legend>Participantes</legend>
-              {members.map((m) => (
-                <label key={m.id} className="santa-participant">
-                  <input
-                    type="checkbox"
-                    name="memberId"
-                    value={m.id}
-                    defaultChecked
-                  />
-                  {m.name}
-                </label>
-              ))}
-            </fieldset>
             <button className="button" type="submit">
-              Fazer sorteio
+              Criar evento
             </button>
           </form>
         )}
