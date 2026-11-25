@@ -4,37 +4,94 @@
  * ============================================================
  *  Cores, tipografia, cantos e sombras estão aqui como
  *  variáveis CSS. O resto do CSS (globals.css) só as consome.
+ *  As cores vêm do logótipo: creme, tinta preta, vermelho
+ *  "Democrata" e o dourado da coroa.
  */
 
 :root {
+  color-scheme: light;
+
   /* --- Cores base --- */
-  --bg: #f6f3ee;            /* fundo da página */
-  --surface: #ffffff;       /* cartões e formulários */
-  --text: #26221c;          /* texto principal */
-  --muted: #7a7264;         /* texto secundário */
-  --border: #e3ddd2;        /* linhas e contornos */
+  --bg: #f4efe6;            /* fundo da página (creme do logótipo) */
+  --surface: #fffdf9;       /* cartões e formulários */
+  --surface-sunken: #efe9de;/* trilhos, caixas de aviso, inputs de leitura */
+  --text: #211d18;          /* texto principal */
+  --muted: #6f675b;         /* texto secundário */
+  --border: #e4dccf;        /* linhas e contornos */
+  --border-strong: #cfc4b2; /* contornos de inputs */
 
   /* --- Cor de destaque (botões, links, barras de resultados) --- */
-  --accent: #c0392b;
-  --accent-hover: #a53125;
+  --accent: #b3302a;
+  --accent-hover: #962620;
+  --accent-soft: #f8e5e1;   /* fundo de seleção / hover */
   --accent-contrast: #ffffff; /* texto em cima do destaque */
 
+  /* --- Dourado (vencedor) --- */
+  --gold: #e3a92b;
+  --gold-soft: #fbf0d4;
+  --gold-text: #7a5410;
+
   /* --- Estados --- */
-  --open-badge-bg: #e8f2e4;
-  --open-badge-text: #3d6b34;
-  --closed-badge-bg: #eeeae2;
-  --closed-badge-text: #7a7264;
-  --error-bg: #fdeceb;
-  --error-text: #a53125;
-  --winner-bg: #faf2e6;
+  --open-badge-bg: #e3f0de;
+  --open-badge-text: #2f6a2a;
+  --open-dot: #3f9a37;
+  --closed-badge-bg: #ece6dc;
+  --closed-badge-text: #6f675b;
+  --error-bg: #fbe7e4;
+  --error-text: #962620;
+  --info-bg: #ece6dc;
+  --info-text: #4d463c;
+  --winner-bg: var(--gold-soft);
 
   /* --- Tipografia --- */
-  --font-body: "Georgia", "Times New Roman", serif;
-  --font-heading: var(--font-body);
-  --font-ui: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  /* As fontes são carregadas em app/layout.tsx (next/font). */
+  --font-body: var(--font-sans), -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-heading: var(--font-display), var(--font-body);
+  --font-ui: var(--font-body);
 
   /* --- Forma --- */
-  --radius: 10px;
-  --shadow: 0 1px 3px rgba(38, 34, 28, 0.08);
-  --max-width: 680px;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(33, 29, 24, 0.05), 0 2px 8px rgba(33, 29, 24, 0.04);
+  --shadow-hover: 0 2px 4px rgba(33, 29, 24, 0.06), 0 8px 24px rgba(33, 29, 24, 0.08);
+  --focus-ring: 0 0 0 3px rgba(179, 48, 42, 0.25);
+  --max-width: 720px;
+}
+
+/* --- Modo escuro (segue a preferência do sistema) --- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #171411;
+    --surface: #221e1a;
+    --surface-sunken: #2b2621;
+    --text: #f2ece2;
+    --muted: #a99f90;
+    --border: #36302a;
+    --border-strong: #4a423a;
+
+    --accent: #d44c42;
+    --accent-hover: #e05a50;
+    --accent-soft: #3a211d;
+    --accent-contrast: #ffffff;
+
+    --gold: #e8b443;
+    --gold-soft: #3a2f17;
+    --gold-text: #f1cc7a;
+
+    --open-badge-bg: #1f3320;
+    --open-badge-text: #9fd596;
+    --open-dot: #6cc561;
+    --closed-badge-bg: #2e2924;
+    --closed-badge-text: #a99f90;
+    --error-bg: #3a1d1a;
+    --error-text: #f4a49c;
+    --info-bg: #2b2621;
+    --info-text: #d6cdbf;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --focus-ring: 0 0 0 3px rgba(224, 87, 77, 0.35);
+  }
 }
