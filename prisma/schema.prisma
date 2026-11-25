@@ -31,21 +31,23 @@ model Proposal {
 // each signed-in device gets its own MemberLink. No passwords. Members
 // without an email can still use a personal secret link (/m/[token]).
 model Member {
-  id          String       @id @default(cuid())
-  name        String
+  id               String                   @id @default(cuid())
+  name             String
   // Stored lowercased. Optional so members added before email login keep
   // working through their links until the admin fills it in.
-  email       String?      @unique
-  createdAt   DateTime     @default(now())
-  links       MemberLink[]
-  loginCodes  LoginCode[]
-  votes       MemberVote[]
-  suggestions Suggestion[]
+  email            String?                  @unique
+  createdAt        DateTime                 @default(now())
+  links            MemberLink[]
+  loginCodes       LoginCode[]
+  votes            MemberVote[]
+  suggestions      Suggestion[]
   // Secret Santa: who this member gives to / receives from, and their wishes.
-  givingTo      SecretSantaAssignment[] @relation("giver")
-  receivingFrom SecretSantaAssignment[] @relation("receiver")
-  wishlistItems WishlistItem[]
-  secretSantas  SecretSantaParticipant[]
+  givingTo         SecretSantaAssignment[]  @relation("giver")
+  receivingFrom    SecretSantaAssignment[]  @relation("receiver")
+  wishlistItems    WishlistItem[]
+  secretSantas     SecretSantaParticipant[]
+  santaExclusionsA SecretSantaExclusion[]   @relation("exclusionA")
+  santaExclusionsB SecretSantaExclusion[]   @relation("exclusionB")
 }
 
 // One recognized device. Created when the member signs in with an email
@@ -150,6 +152,7 @@ model SecretSantaEvent {
   participants SecretSantaParticipant[]
   assignments  SecretSantaAssignment[]
   wishlist     WishlistItem[]
+  exclusions   SecretSantaExclusion[]
 
   @@index([active])
 }
@@ -164,6 +167,21 @@ model SecretSantaParticipant {
   memberId  String
 
   @@unique([eventId, memberId])
+}
+
+// Two participants who must not draw each other (e.g. a couple). It works
+// both ways: neither gives to the other. Stored with aId < bId.
+model SecretSantaExclusion {
+  id        String           @id @default(cuid())
+  createdAt DateTime         @default(now())
+  event     SecretSantaEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  a         Member           @relation("exclusionA", fields: [aId], references: [id], onDelete: Cascade)
+  aId       String
+  b         Member           @relation("exclusionB", fields: [bId], references: [id], onDelete: Cascade)
+  bId       String
+
+  @@unique([eventId, aId, bId])
 }
 
 // One drawn pair: giver gives a gift to receiver. Each participant appears

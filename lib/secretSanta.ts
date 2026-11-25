@@ -3,21 +3,63 @@ import { prisma } from "./db";
 
 export const MIN_PARTICIPANTS = 3;
 
-// Draws a single gift-giving cycle: shuffle everyone, then each person gives
-// to the next one in the shuffled order (the last gives to the first). Nobody
-// draws themselves, and nobody can deduce their giver from a closed pair.
-export function drawPairs(
-  memberIds: string[]
-): { giverId: string; receiverId: string }[] {
-  const order = [...memberIds];
-  for (let i = order.length - 1; i > 0; i--) {
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
-    [order[i], order[j]] = [order[j], order[i]];
+    [out[i], out[j]] = [out[j], out[i]];
   }
+  return out;
+}
+
+const MAX_DRAW_STEPS = 200_000;
+
+// Draws a single gift-giving cycle: each person gives to the next one in a
+// random order, and the last gives to the first. Nobody draws themselves,
+// and nobody can deduce their giver from a closed pair. Excluded pairs (in
+// either direction) are never next to each other in the cycle. Returns null
+// when the exclusions leave no possible draw.
+export function drawPairs(
+  memberIds: string[],
+  exclusions: [string, string][] = []
+): { giverId: string; receiverId: string }[] | null {
+  if (memberIds.length < 2) return null;
+  const blocked = new Set(
+    exclusions.flatMap(([a, b]) => [`${a}|${b}`, `${b}|${a}`])
+  );
+  const allowed = (giver: string, receiver: string) =>
+    !blocked.has(`${giver}|${receiver}`);
+
+  // Randomized depth-first search for a cycle that avoids every exclusion.
+  const [first, ...rest] = shuffle(memberIds);
+  const order = [first];
+  const used = new Set([first]);
+  let steps = 0;
+  const extend = (): boolean => {
+    if (++steps > MAX_DRAW_STEPS) return false;
+    const last = order[order.length - 1];
+    if (order.length === memberIds.length) return allowed(last, first);
+    for (const next of shuffle(rest)) {
+      if (used.has(next) || !allowed(last, next)) continue;
+      order.push(next);
+      used.add(next);
+      if (extend()) return true;
+      order.pop();
+      used.delete(next);
+    }
+    return false;
+  };
+  if (!extend()) return null;
+
   return order.map((giverId, i) => ({
     giverId,
     receiverId: order[(i + 1) % order.length],
   }));
+}
+
+// Stores an exclusion pair in a fixed order, so A–B and B–A are the same row.
+export function exclusionKey(x: string, y: string): { aId: string; bId: string } {
+  return x < y ? { aId: x, bId: y } : { aId: y, bId: x };
 }
 
 export async function activeEvent() {
