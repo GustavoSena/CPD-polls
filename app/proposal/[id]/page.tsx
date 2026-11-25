@@ -64,7 +64,7 @@ export default async function ProposalPage({
       </Link>
 
       <article className="card">
-        <h2>{proposal.title}</h2>
+        <h1 className="page-title">{proposal.title}</h1>
         {proposal.description && (
           <p className="proposal-description">
             <Linkify text={proposal.description} />
@@ -108,7 +108,7 @@ export default async function ProposalPage({
                 <OptionBody option={o} />
               </label>
             ))}
-            <button className="button" type="submit">
+            <button className="button button-block" type="submit">
               Votar
             </button>
           </form>
@@ -186,7 +186,14 @@ function Results({
             : `🏆 Opção vencedora: ${winners[0].text}`}
       </p>
       {counts.map((c) => (
-        <div className="result-row" key={c.id}>
+        <div
+          className={
+            winners.length === 1 && winners[0].id === c.id
+              ? "result-row result-row-winner"
+              : "result-row"
+          }
+          key={c.id}
+        >
           <div className="result-label">
             <span>{c.text}</span>
             <span className="result-count">

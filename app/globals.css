@@ -7,11 +7,20 @@
   padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+  font-size: 1rem;
   line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   /* Títulos compridos e links colados não podem esticar a página em ecrãs
      estreitos — sem isto, uma palavra longa obriga a scroll horizontal. */
   overflow-wrap: break-word;
@@ -19,29 +28,57 @@ body {
 
 a {
   color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
 }
 
 .container {
+  width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 1rem 4rem;
+  flex: 1;
 }
 
 /* --- Cabeçalho --- */
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
   margin-bottom: 2rem;
 }
 
 .site-header-inner {
-  max-width: var(--max-width);
+  /* Mais largo do que o conteúdo, para o menu caber ao lado do logótipo. */
+  max-width: calc(var(--max-width) + 16rem);
   margin: 0 auto;
-  padding: 1.1rem 1rem;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
   flex-wrap: wrap;
 }
 
@@ -50,6 +87,12 @@ a {
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-brand:hover {
+  color: var(--text);
 }
 
 /* O logótipo é um círculo desenhado sobre um quadrado preto — os cantos
@@ -60,12 +103,19 @@ a {
   flex-shrink: 0;
   width: 44px;
   height: auto;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border);
+  transition: transform 0.2s ease;
+}
+
+.site-brand:hover .site-logo {
+  transform: rotate(-6deg) scale(1.04);
 }
 
 .site-title {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 700;
+  line-height: 1.15;
   min-width: 0;
 }
 
@@ -75,72 +125,205 @@ a {
 }
 
 .site-subtitle {
+  font-family: var(--font-body);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 500;
   display: block;
+  margin-top: 0.1rem;
 }
 
 .site-nav {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .nav-link {
   font-family: var(--font-ui);
   font-size: 0.9rem;
+  font-weight: 500;
   text-decoration: none;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  padding: 0.45rem 0.9rem;
-  border-radius: var(--radius);
+  color: var(--muted);
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
-  background: var(--accent-hover);
+  color: var(--text);
+  background: var(--surface-sunken);
 }
 
-/* Signed-in member: name + "Sair" for this device. */
+.nav-link[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-sunken);
+}
+
+/* A ação principal do cabeçalho ("Nova proposta"). */
+.nav-link-primary,
+.nav-link-primary[aria-current="page"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  margin-left: 0.25rem;
+}
+
+.nav-link-primary:hover {
+  background: var(--accent-hover);
+  color: var(--accent-contrast);
+}
+
+@media (max-width: 520px) {
+  .site-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .site-logo {
+    width: 38px;
+  }
+
+  .site-title {
+    font-size: 1.08rem;
+  }
+
+  /* Se os itens não couberem, o menu desliza na horizontal em vez de
+     alargar a página. */
+  .site-nav {
+    width: calc(100% + 2rem);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+    scrollbar-width: none;
+  }
+
+  .site-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-link {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.55rem;
+  }
+
+  .nav-link-primary {
+    padding: 0.4rem 0.75rem;
+  }
+
+  /* O nome do membro já aparece na mensagem de boas-vindas — poupa
+     espaço para o menu caber numa linha. */
+  .member-nav-name {
+    display: none;
+  }
+
+  .nav-link-primary {
+    margin-left: auto;
+  }
+
+  /* Em ecrã estreito as linhas de meta quebram: sem separadores "·". */
+  .card-meta {
+    gap: 0.35rem 0.9rem;
+  }
+
+  .card .card-meta > span + span:not(.badge)::before {
+    content: none;
+  }
+}
+
+/* Membro com sessão iniciada: nome + "Sair" neste dispositivo. */
 .member-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.1rem;
 }
 
 .member-nav-name {
   font-family: var(--font-ui);
   font-size: 0.9rem;
-  color: var(--muted);
+  font-weight: 600;
+  color: var(--text);
+  padding-left: 0.5rem;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .member-nav-signout {
   border: none;
+  background: none;
   cursor: pointer;
+  line-height: inherit;
 }
 
-/* --- Cartões de proposta --- */
-.section-title {
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
+/* --- Títulos de página e de secção --- */
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.card .page-title {
+  font-size: 1.55rem;
+  margin-bottom: 0.25rem;
+}
+
+.page-lead {
   color: var(--muted);
-  margin: 2rem 0 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  margin-top: 0.35rem;
 }
 
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 2.25rem 0 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.section-title:first-child,
+.notice + .section-title,
+.form-error + .section-title {
+  margin-top: 0.5rem;
+}
+
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* --- Cartões --- */
 .card {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1.2rem 1.4rem;
-  margin-bottom: 1rem;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding: 1.1rem 1.1rem;
+  }
 }
 
 .card h2 {
-  font-family: var(--font-heading);
-  font-size: 1.2rem;
-  margin-bottom: 0.2rem;
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
 }
 
 .card h2 a {
@@ -152,11 +335,48 @@ a {
   color: var(--accent);
 }
 
+/* Título de um cartão que é a página inteira (ex.: Nova proposta). */
+.card:not(.card-clickable) > h2:first-child {
+  font-size: 1.45rem;
+}
+
+/* Texto que abre um cartão (ex.: uma sugestão) lê-se como corpo principal. */
+.card > .proposal-description:first-child {
+  color: var(--text);
+  margin-top: 0;
+}
+
+/* Cartão inteiro clicável: o link do título estende-se por cima do cartão. */
+.card-clickable {
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.card-clickable:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.card-clickable h2 a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.card-clickable h2 a:focus-visible {
+  box-shadow: none;
+}
+
+.card-clickable h2 a:focus-visible::after {
+  box-shadow: var(--focus-ring);
+}
+
 /* Primeiras linhas da descrição, no cartão da lista. */
 .card-excerpt {
   color: var(--muted);
-  font-size: 0.92rem;
-  margin-top: 0.35rem;
+  font-size: 0.93rem;
+  margin-top: 0.3rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -169,22 +389,58 @@ a {
   font-size: 0.82rem;
   color: var(--muted);
   display: flex;
-  gap: 0.9rem;
+  gap: 0.35rem 0.5rem;
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   align-items: center;
 }
 
+/* Separador "·" entre os itens de meta (exceto depois do badge). */
+.card-meta > span + span:not(.badge)::before {
+  content: "·";
+  margin-right: 0.5rem;
+  color: var(--border-strong);
+}
+
+.card-meta > .badge + span:not(.badge)::before {
+  content: none;
+}
+
+.card-meta > .badge {
+  margin-right: 0.25rem;
+}
+
 .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-family: var(--font-ui);
-  font-size: 0.75rem;
-  padding: 0.15rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.18rem 0.6rem;
   border-radius: 999px;
+  line-height: 1.4;
 }
 
 .badge-open {
   background: var(--open-badge-bg);
   color: var(--open-badge-text);
+}
+
+.badge-open::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--open-dot);
+  box-shadow: 0 0 0 0 var(--open-dot);
+  animation: pulse 2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--open-dot) 60%, transparent); }
+  70% { box-shadow: 0 0 0 5px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 .badge-closed {
@@ -194,30 +450,60 @@ a {
 
 .empty {
   color: var(--muted);
+  text-align: center;
+  padding: 1.75rem 1rem;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: 0.93rem;
+  margin-bottom: 0.9rem;
+}
+
+/* Dentro de um cartão, o estado vazio não precisa de caixa própria. */
+.card .empty,
+.member-row .empty {
+  border: none;
+  padding: 0.5rem 0;
+  text-align: left;
   font-style: italic;
+  margin-bottom: 0;
 }
 
 /* --- Página da proposta --- */
 .proposal-description {
   color: var(--muted);
-  margin: 0.6rem 0 1rem;
+  margin: 0.5rem 0 0.75rem;
   white-space: pre-wrap;
+}
+
+.options-title {
+  font-size: 1.05rem;
+  margin-bottom: 0.8rem;
 }
 
 .option-row {
   display: flex;
   align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   margin-bottom: 0.6rem;
   cursor: pointer;
   background: var(--surface);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .option-row:hover {
+  border-color: var(--border-strong);
+}
+
+.option-row:has(input:checked) {
   border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.option-row:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
 }
 
 /* Opções só para leitura — para quem ainda não pode votar. */
@@ -229,24 +515,22 @@ a {
   border-color: var(--border);
 }
 
-.options-title {
-  font-family: var(--font-heading);
-  font-size: 1rem;
-  margin-bottom: 0.7rem;
-}
-
 .option-row input[type="radio"] {
   accent-color: var(--accent);
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.15rem;
+  height: 1.15rem;
   flex-shrink: 0;
   margin-top: 0.15rem; /* alinha com a primeira linha do título */
+}
+
+.option-row input[type="radio"]:focus-visible {
+  box-shadow: none;
 }
 
 .option-body {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   min-width: 0;
 }
 
@@ -260,6 +544,12 @@ a {
   white-space: pre-wrap;
 }
 
+/* O botão de votar ocupa a largura toda no fim da lista de opções. */
+.option-row + .button,
+.option-row ~ .button[type="submit"] {
+  margin-top: 0.4rem;
+}
+
 /* --- Imagens --- */
 .media-img {
   display: block;
@@ -268,7 +558,7 @@ a {
   /* Dentro de .option-body (flex column), o stretch por omissão esticava a
      imagem à largura do título mais comprido, distorcendo-a. */
   align-self: flex-start;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   margin: 0.5rem 0;
 }
@@ -279,15 +569,21 @@ a {
 
 /* --- Resultados --- */
 .result-row {
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.result-row:last-child {
+  margin-bottom: 0;
 }
 
 .result-label {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 1rem;
   font-size: 0.95rem;
-  margin-bottom: 0.25rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
 }
 
 /* Deixa o nome da opção encolher em vez de empurrar a contagem para fora. */
@@ -298,109 +594,200 @@ a {
 .result-count {
   font-family: var(--font-ui);
   font-size: 0.82rem;
+  font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .result-bar-track {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--surface-sunken);
   border-radius: 999px;
-  height: 0.7rem;
+  height: 0.6rem;
   overflow: hidden;
 }
 
 .result-bar {
-  background: var(--accent);
+  background: var(--border-strong);
   height: 100%;
   border-radius: 999px;
+  transform-origin: left;
+  animation: grow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.result-row-winner .result-bar {
+  background: var(--gold);
+}
+
+.result-row-winner .result-label > span:first-child {
+  font-weight: 700;
 }
 
 .winner {
   background: var(--winner-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.7rem 1rem;
-  margin-bottom: 1.2rem;
-  font-size: 0.95rem;
+  color: var(--gold-text);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+  font-size: 0.97rem;
 }
 
 /* --- Formulários --- */
 .form-field {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.2rem;
 }
 
-.form-field label {
+.form-field > label,
+fieldset > legend {
   display: block;
   font-family: var(--font-ui);
-  font-size: 0.85rem;
+  font-size: 0.87rem;
   font-weight: 600;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.35rem;
 }
 
 .form-hint {
   font-family: var(--font-ui);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--muted);
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
 }
 
 input[type="text"],
 input[type="number"],
 input[type="password"],
 input[type="email"],
+input:not([type]),
 textarea,
 select {
   width: 100%;
   font-family: var(--font-ui);
-  font-size: 0.95rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  font-size: 1rem; /* 16px evita o zoom automático do iOS */
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
 }
 
 textarea {
   resize: vertical;
+  line-height: 1.5;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.4rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 1.1rem) 52%, calc(100% - 0.8rem) 52%;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--muted);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+input[readonly] {
+  background: var(--surface-sunken);
+  border-color: var(--border);
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   font-family: var(--font-ui);
-  font-size: 0.95rem;
+  font-size: 0.97rem;
+  font-weight: 600;
   background: var(--accent);
   color: var(--accent-contrast);
   border: none;
-  border-radius: var(--radius);
-  padding: 0.6rem 1.3rem;
+  border-radius: 999px;
+  padding: 0.68rem 1.4rem;
   cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
 .button:hover {
   background: var(--accent-hover);
+  color: var(--accent-contrast);
+}
+
+.button:active {
+  transform: translateY(1px);
 }
 
 .button:disabled {
   opacity: 0.6;
   cursor: default;
+  transform: none;
+}
+
+/* Botão a toda a largura (ex.: Votar). */
+.button-block {
+  display: flex;
+  width: 100%;
+}
+
+/* Botão secundário, discreto. */
+.button-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border-strong);
+  box-shadow: none;
+}
+
+.button-secondary:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* Depois das variantes: a sombra normal do botão não pode esconder o anel
+   de foco do teclado. */
+.button:focus-visible {
+  box-shadow: var(--focus-ring);
 }
 
 /* --- Entradas de opção no formulário --- */
 .option-entry {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.8rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 0.9rem 1rem 1rem;
   margin-bottom: 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .option-entry-header {
@@ -411,60 +798,158 @@ select:focus {
 
 .option-entry-number {
   font-family: var(--font-ui);
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
+/* Botões em forma de link (Remover, Copiar, + Adicionar…). */
 .option-remove,
 .option-add {
   font-family: var(--font-ui);
-  font-size: 0.85rem;
+  font-size: 0.87rem;
+  font-weight: 600;
   background: none;
   border: none;
   color: var(--accent);
   cursor: pointer;
-  padding: 0;
+  padding: 0.25rem 0.5rem;
+  margin: -0.25rem -0.5rem;
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
 }
 
 .option-remove:hover,
 .option-add:hover {
-  text-decoration: underline;
+  background: var(--accent-soft);
+}
+
+/* "+ Adicionar opção" como zona tracejada, por baixo das opções. */
+.form-field > .option-add {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.7rem;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.form-field > .option-add:hover {
+  border-color: var(--accent);
 }
 
 input[type="file"] {
   font-family: var(--font-ui);
   font-size: 0.85rem;
   color: var(--muted);
+  max-width: 100%;
+}
+
+input[type="file"]::file-selector-button {
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  margin-right: 0.7rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--surface-sunken);
+}
+
+/* --- Avisos --- */
+.form-error,
+.notice {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .form-error {
   background: var(--error-bg);
   color: var(--error-text);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.9rem;
-  margin-bottom: 1rem;
-  font-family: var(--font-ui);
-  font-size: 0.9rem;
+}
+
+.form-error::before {
+  content: "!";
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--error-text);
+  color: var(--error-bg);
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-top: 0.05rem;
 }
 
 .notice {
-  background: var(--closed-badge-bg);
-  color: var(--closed-badge-text);
-  border-radius: var(--radius);
-  padding: 0.6rem 0.9rem;
-  margin-bottom: 1rem;
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.notice::before {
+  content: "i";
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  background: var(--muted);
+  color: var(--info-bg);
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-style: italic;
+  font-family: Georgia, serif;
+  margin-top: 0.05rem;
+}
+
+/* Aviso de boas-vindas (membro reconhecido). */
+.notice-success {
+  background: var(--open-badge-bg);
+  color: var(--open-badge-text);
+}
+
+.notice-success::before {
+  content: "✓";
+  font-style: normal;
   font-family: var(--font-ui);
-  font-size: 0.9rem;
+  background: var(--open-dot);
+  color: var(--surface);
 }
 
 .back-link {
   font-family: var(--font-ui);
-  font-size: 0.85rem;
-  display: inline-block;
+  font-size: 0.87rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   margin-bottom: 1rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--text);
 }
 
 /* --- Administração --- */
@@ -476,9 +961,9 @@ input[type="file"] {
 }
 
 .member-row {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
   margin-bottom: 0.6rem;
 }
 
@@ -487,7 +972,7 @@ input[type="file"] {
   justify-content: space-between;
   align-items: baseline;
   gap: 1rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Um link por dispositivo do membro. */
@@ -495,10 +980,10 @@ input[type="file"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
   flex-wrap: wrap;
   border-top: 1px solid var(--border);
-  padding: 0.6rem 0;
+  padding: 0.65rem 0;
 }
 
 .link-info {
@@ -512,31 +997,35 @@ input[type="file"] {
 .link-label {
   font-family: var(--font-ui);
   font-size: 0.78rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
 .link-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important;
   font-size: 0.78rem !important;
-  color: var(--muted);
+  color: var(--muted) !important;
+  padding: 0.4rem 0.6rem !important;
 }
 
 .link-actions {
   display: flex;
-  gap: 0.9rem;
+  gap: 1.1rem;
   align-items: center;
+  padding: 0 0.5rem;
 }
 
 .add-link-form {
   display: flex;
-  gap: 0.6rem;
+  gap: 1rem;
   align-items: center;
   border-top: 1px solid var(--border);
-  padding-top: 0.6rem;
+  padding-top: 0.65rem;
 }
 
 .add-link-form input {
-  font-size: 0.85rem !important;
-  padding: 0.35rem 0.6rem !important;
+  font-size: 0.87rem !important;
+  padding: 0.4rem 0.7rem !important;
 }
 
 .add-link-form .option-add {
@@ -547,7 +1036,7 @@ input[type="file"] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
-  margin-top: 1rem;
+  margin-top: 1.1rem;
 }
 
 .add-member-form input {
@@ -555,16 +1044,28 @@ input[type="file"] {
   min-width: 0;
 }
 
+.add-member-form .button {
+  flex-shrink: 0;
+}
+
+/* --- Rodapé --- */
 .site-footer {
+  width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 1rem;
-  text-align: center;
+  padding: 1.5rem 1rem 2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .site-footer a {
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
   color: var(--muted);
   text-decoration: none;
 }
@@ -576,6 +1077,7 @@ input[type="file"] {
 /* --- Amigo secreto --- */
 .santa-reveal {
   text-align: center;
+  background: linear-gradient(180deg, var(--surface) 30%, var(--gold-soft));
 }
 
 .santa-reveal-label {
@@ -601,8 +1103,8 @@ input[type="file"] {
 }
 
 .wish-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   padding: 0.6rem;
   background: var(--surface);
 }
@@ -625,8 +1127,8 @@ input[type="file"] {
   width: 84px;
   height: 84px;
   object-fit: cover;
-  border-radius: calc(var(--radius) - 4px);
-  background: var(--bg);
+  border-radius: calc(var(--radius-sm) - 3px);
+  background: var(--gold-soft);
   border: 1px solid var(--border);
 }
 
@@ -713,10 +1215,10 @@ input[type="file"] {
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-ui);
-  font-size: 0.95rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  font-size: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
@@ -724,8 +1226,7 @@ input[type="file"] {
 }
 
 .member-picker-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  border-color: var(--accent);
 }
 
 /* Opens in the flow (not floating) so it never hides the form's buttons. */
@@ -734,8 +1235,8 @@ input[type="file"] {
   padding: 0.6rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 6px 20px rgba(38, 34, 28, 0.12);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hover);
 }
 
 .member-picker-actions {
@@ -763,7 +1264,7 @@ input[type="file"] {
 }
 
 .form-field label.member-picker-option:hover {
-  background: var(--bg);
+  background: var(--surface-sunken);
 }
 
 .member-picker-empty {
@@ -826,6 +1327,53 @@ input[type="file"] {
   min-width: 0;
   font-size: 0.85rem !important;
   padding: 0.35rem 0.6rem !important;
+}
+
+@media (max-width: 520px) {
+  .site-footer {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+/* --- Movimento reduzido --- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- Entrar: campo do código de 6 dígitos --- */
+input[autocomplete="one-time-code"] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  padding: 0.7rem 0.8rem;
+}
+
+/* Admin: título de proposta na lista, como link discreto. */
+.link-info > a.option-title {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.link-info > a.option-title:hover {
+  color: var(--accent);
+}
+
+.add-link-form {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+.add-link-form input[type="text"] {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 /* Admin: editing an event and its exclusion pairs. */
