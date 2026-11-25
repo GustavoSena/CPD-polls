@@ -772,6 +772,12 @@ input[readonly] {
   color: var(--text);
 }
 
+/* Depois das variantes: a sombra normal do botão não pode esconder o anel
+   de foco do teclado. */
+.button:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
 /* --- Entradas de opção no formulário --- */
 .option-entry {
   border: 1.5px solid var(--border);
