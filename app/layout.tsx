@@ -3,6 +3,7 @@ import { Fredoka, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { MemberNav } from "./MemberNav";
+import { SecretSantaNavLink } from "./SecretSantaNavLink";
 import { SiteNav } from "./SiteNav";
 import "./theme.css";
 import "./globals.css";
@@ -62,6 +63,7 @@ export default function RootLayout({
               </span>
             </Link>
             <SiteNav>
+              <SecretSantaNavLink />
               <MemberNav />
             </SiteNav>
           </div>

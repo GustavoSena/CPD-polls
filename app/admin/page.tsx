@@ -5,16 +5,25 @@ import { currentMember, isAdmin } from "@/lib/auth";
 import {
   addLink,
   addMember,
+  cancelSecretSanta,
+  createSecretSanta,
+  drawSecretSanta,
+  endSecretSanta,
   removeLink,
   removeMember,
   setMemberEmail,
+  setSecretSantaParticipants,
 } from "./actions";
+import { MemberPicker } from "./MemberPicker";
+import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
 import { CopyButton } from "./CopyButton";
 import { ProposalsAdmin } from "./ProposalsAdmin";
 
 export const dynamic = "force-dynamic";
 
 const ERROR_MESSAGES: Record<string, string> = {
+  "amigo-secreto-poucos": `O sorteio precisa de pelo menos ${MIN_PARTICIPANTS} participantes.`,
+  "amigo-secreto-ativo": "Já há um amigo secreto a decorrer.",
   "email-invalido": "Esse email não parece válido.",
   "email-usado": "Esse email já pertence a outro membro.",
 };
@@ -58,6 +67,19 @@ export default async function AdminPage({
     include: { links: { orderBy: { createdAt: "asc" } } },
   });
 
+  // Who signed up and counts only — never who drew whom.
+  const santa = await prisma.secretSantaEvent.findFirst({
+    where: { active: true },
+    orderBy: { createdAt: "desc" },
+    include: {
+      participants: { select: { memberId: true } },
+      wishlist: { select: { memberId: true } },
+    },
+  });
+  const joinedIds = new Set(santa?.participants.map((p) => p.memberId));
+  const withWishes = new Set(santa?.wishlist.map((w) => w.memberId)).size;
+  const pickable = members.map((m) => ({ id: m.id, name: m.name }));
+
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
   const baseUrl = `${proto}://${h.get("host")}`;
@@ -81,7 +103,7 @@ export default async function AdminPage({
           quando todos os membros da lista tiverem votado.
         </p>
 
-        {erro && ERROR_MESSAGES[erro] && (
+        {erro && !erro.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
           <p className="form-error">{ERROR_MESSAGES[erro]}</p>
         )}
 
@@ -189,6 +211,107 @@ export default async function AdminPage({
             Adicionar
           </button>
         </form>
+      </section>
+
+      <section className="card" id="amigo-secreto">
+        <h2>Amigo secreto</h2>
+        {erro?.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
+          <p className="form-error">{ERROR_MESSAGES[erro]}</p>
+        )}
+
+        {santa && santa.drawnAt ? (
+          <>
+            <p className="proposal-description">
+              <strong>{santa.name}</strong>: sorteio feito, com{" "}
+              {joinedIds.size} participantes. {withWishes} têm desejos na
+              lista. Cada pessoa vê a quem dá o presente em{" "}
+              <Link href="/amigo-secreto">Amigo secreto</Link> — os pares não
+              aparecem aqui.
+            </p>
+            <div className="santa-admin-actions">
+              <form action={endSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="button">
+                  Encerrar
+                </button>
+              </form>
+              <form action={cancelSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="option-remove">
+                  Cancelar e apagar sorteio e listas
+                </button>
+              </form>
+            </div>
+          </>
+        ) : santa ? (
+          <>
+            <p className="proposal-description">
+              <strong>{santa.name}</strong>: à espera do sorteio.{" "}
+              {joinedIds.size} participantes, {withWishes} já com desejos na
+              lista. Cada participante preenche a sua lista em{" "}
+              <Link href="/amigo-secreto">Amigo secreto</Link>.
+            </p>
+            <form action={setSecretSantaParticipants}>
+              <input type="hidden" name="id" value={santa.id} />
+              <MemberPicker members={pickable} initial={[...joinedIds]} />
+              <p className="form-hint">
+                Podes mudar a lista até ao sorteio. Quem tirares perde a sua
+                lista de desejos.
+              </p>
+              <button type="submit" className="option-add">
+                Guardar participantes
+              </button>
+            </form>
+            <div className="santa-admin-actions">
+              <form action={drawSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button className="button" type="submit">
+                  Fazer sorteio
+                </button>
+              </form>
+              <form action={cancelSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <button type="submit" className="option-remove">
+                  Cancelar evento e apagar listas
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <form action={createSecretSanta}>
+            <p className="proposal-description">
+              Cria o evento e escolhe quem participa. Aparece o separador
+              Amigo secreto, e cada participante pode logo preencher a sua
+              lista de desejos. O sorteio fazes tu mais tarde, aqui.
+            </p>
+            <div className="form-field">
+              <label htmlFor="santa-name">Nome</label>
+              <input
+                id="santa-name"
+                name="name"
+                type="text"
+                defaultValue={`Amigo secreto ${new Date().getFullYear()}`}
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="santa-details">Detalhes (opcional)</label>
+              <textarea
+                id="santa-details"
+                name="details"
+                rows={2}
+                maxLength={1000}
+                placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
+              />
+            </div>
+            <MemberPicker members={pickable} />
+            <p className="form-hint">
+              Pelo menos {MIN_PARTICIPANTS} pessoas.
+            </p>
+            <button className="button" type="submit">
+              Criar evento
+            </button>
+          </form>
+        )}
       </section>
 
       <ProposalsAdmin />
