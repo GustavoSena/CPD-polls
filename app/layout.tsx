@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Inter } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { MemberNav } from "./MemberNav";
@@ -8,9 +8,9 @@ import { SiteNav } from "./SiteNav";
 import "./theme.css";
 import "./globals.css";
 
-// Rounded display face echoes the logo lettering; Inter for everything else.
+// Fraunces (a warm serif) for headings; Inter for everything else.
 // Exposed as CSS variables consumed by app/theme.css.
-const display = Fredoka({
+const display = Fraunces({
   subsets: ["latin"],
   weight: "variable",
   variable: "--font-display",
