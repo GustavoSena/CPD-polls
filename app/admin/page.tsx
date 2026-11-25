@@ -13,6 +13,10 @@ import {
   removeMember,
   setMemberEmail,
   setSecretSantaParticipants,
+  addSecretSantaExclusion,
+  removeSecretSantaExclusion,
+  undoSecretSantaDraw,
+  updateSecretSanta,
 } from "./actions";
 import { MemberPicker } from "./MemberPicker";
 import { MIN_PARTICIPANTS } from "@/lib/secretSanta";
@@ -24,6 +28,9 @@ export const dynamic = "force-dynamic";
 const ERROR_MESSAGES: Record<string, string> = {
   "amigo-secreto-poucos": `O sorteio precisa de pelo menos ${MIN_PARTICIPANTS} participantes.`,
   "amigo-secreto-ativo": "Já há um amigo secreto a decorrer.",
+  "amigo-secreto-exclusao": "Escolhe duas pessoas diferentes, ambas participantes.",
+  "amigo-secreto-impossivel":
+    "Com estas exclusões não há sorteio possível. Tira alguma exclusão ou junta mais participantes.",
   "email-invalido": "Esse email não parece válido.",
   "email-usado": "Esse email já pertence a outro membro.",
 };
@@ -74,11 +81,20 @@ export default async function AdminPage({
     include: {
       participants: { select: { memberId: true } },
       wishlist: { select: { memberId: true } },
+      exclusions: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          a: { select: { name: true } },
+          b: { select: { name: true } },
+        },
+      },
     },
   });
   const joinedIds = new Set(santa?.participants.map((p) => p.memberId));
   const withWishes = new Set(santa?.wishlist.map((w) => w.memberId)).size;
   const pickable = members.map((m) => ({ id: m.id, name: m.name }));
+  const participantsList = pickable.filter((m) => joinedIds.has(m.id));
 
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";
@@ -89,6 +105,215 @@ export default async function AdminPage({
       <Link href="/" className="back-link">
         ← Todas as propostas
       </Link>
+
+      <section className="card" id="amigo-secreto">
+        <h2>Amigo secreto</h2>
+        {erro?.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
+          <p className="form-error">{ERROR_MESSAGES[erro]}</p>
+        )}
+
+        {santa ? (
+          <>
+            {santa.drawnAt ? (
+              <p className="proposal-description">
+                <strong>{santa.name}</strong>: sorteio feito, com{" "}
+                {joinedIds.size} participantes. {withWishes} têm desejos na
+                lista. Cada pessoa vê a quem dá o presente em{" "}
+                <Link href="/amigo-secreto">Amigo secreto</Link> — os pares
+                não aparecem aqui.
+              </p>
+            ) : (
+              <p className="proposal-description">
+                <strong>{santa.name}</strong>: à espera do sorteio.{" "}
+                {joinedIds.size} participantes, {withWishes} já com desejos
+                na lista. Cada participante preenche a sua lista em{" "}
+                <Link href="/amigo-secreto">Amigo secreto</Link>.
+              </p>
+            )}
+
+            <details className="santa-edit">
+              <summary>Editar nome e detalhes</summary>
+              <form action={updateSecretSanta}>
+                <input type="hidden" name="id" value={santa.id} />
+                <div className="form-field">
+                  <label htmlFor="santa-edit-name">Nome</label>
+                  <input
+                    id="santa-edit-name"
+                    name="name"
+                    type="text"
+                    maxLength={200}
+                    defaultValue={santa.name}
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="santa-edit-details">
+                    Detalhes (opcional)
+                  </label>
+                  <textarea
+                    id="santa-edit-details"
+                    name="details"
+                    rows={2}
+                    maxLength={1000}
+                    defaultValue={santa.details}
+                  />
+                </div>
+                <button type="submit" className="option-add">
+                  Guardar alterações
+                </button>
+              </form>
+            </details>
+
+            {santa.drawnAt ? (
+              <>
+                <p className="form-hint santa-hint">
+                  Para mudar participantes ou exclusões, anula o sorteio: os
+                  pares são apagados (as listas de desejos ficam) e depois
+                  fazes um novo sorteio.
+                </p>
+                <div className="santa-admin-actions">
+                  <form action={endSecretSanta}>
+                    <input type="hidden" name="id" value={santa.id} />
+                    <button type="submit" className="button">
+                      Encerrar
+                    </button>
+                  </form>
+                  <form action={undoSecretSantaDraw}>
+                    <input type="hidden" name="id" value={santa.id} />
+                    <button type="submit" className="option-add">
+                      Anular sorteio para editar
+                    </button>
+                  </form>
+                  <form action={cancelSecretSanta}>
+                    <input type="hidden" name="id" value={santa.id} />
+                    <button type="submit" className="option-remove">
+                      Cancelar e apagar tudo
+                    </button>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <>
+                <form action={setSecretSantaParticipants}>
+                  <input type="hidden" name="id" value={santa.id} />
+                  <MemberPicker members={pickable} initial={[...joinedIds]} />
+                  <p className="form-hint">
+                    Podes mudar a lista até ao sorteio. Quem tirares perde a
+                    sua lista de desejos.
+                  </p>
+                  <button type="submit" className="option-add">
+                    Guardar participantes
+                  </button>
+                </form>
+
+                <div className="santa-exclusions">
+                  <h3>Quem não pode tirar quem</h3>
+                  <p className="form-hint">
+                    Por exemplo, casais. Funciona nos dois sentidos: nenhum
+                    dos dois dá presente ao outro.
+                  </p>
+                  {santa.exclusions.length > 0 && (
+                    <ul className="santa-exclusion-list">
+                      {santa.exclusions.map((x) => (
+                        <li key={x.id}>
+                          <span>
+                            {x.a.name} ↔ {x.b.name}
+                          </span>
+                          <form action={removeSecretSantaExclusion}>
+                            <input type="hidden" name="id" value={santa.id} />
+                            <input
+                              type="hidden"
+                              name="exclusionId"
+                              value={x.id}
+                            />
+                            <button type="submit" className="option-remove">
+                              Remover
+                            </button>
+                          </form>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <form
+                    action={addSecretSantaExclusion}
+                    className="santa-exclusion-form"
+                  >
+                    <input type="hidden" name="id" value={santa.id} />
+                    <select name="a" aria-label="Primeira pessoa" required>
+                      <option value="">Pessoa…</option>
+                      {participantsList.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span aria-hidden="true">↔</span>
+                    <select name="b" aria-label="Segunda pessoa" required>
+                      <option value="">Pessoa…</option>
+                      {participantsList.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="option-add">
+                      Adicionar
+                    </button>
+                  </form>
+                </div>
+
+                <div className="santa-admin-actions">
+                  <form action={drawSecretSanta}>
+                    <input type="hidden" name="id" value={santa.id} />
+                    <button className="button" type="submit">
+                      Fazer sorteio
+                    </button>
+                  </form>
+                  <form action={cancelSecretSanta}>
+                    <input type="hidden" name="id" value={santa.id} />
+                    <button type="submit" className="option-remove">
+                      Cancelar evento e apagar listas
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+          </>
+        ) : (
+          <form action={createSecretSanta}>
+            <p className="proposal-description">
+              Cria o evento e escolhe quem participa. Aparece o separador
+              Amigo secreto, e cada participante pode logo preencher a sua
+              lista de desejos. O sorteio fazes tu mais tarde, aqui.
+            </p>
+            <div className="form-field">
+              <label htmlFor="santa-name">Nome</label>
+              <input
+                id="santa-name"
+                name="name"
+                type="text"
+                defaultValue={`Amigo secreto ${new Date().getFullYear()}`}
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="santa-details">Detalhes (opcional)</label>
+              <textarea
+                id="santa-details"
+                name="details"
+                rows={2}
+                maxLength={1000}
+                placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
+              />
+            </div>
+            <MemberPicker members={pickable} />
+            <p className="form-hint">
+              Pelo menos {MIN_PARTICIPANTS} pessoas.
+            </p>
+            <button className="button" type="submit">
+              Criar evento
+            </button>
+          </form>
+        )}
+      </section>
 
       <section className="card">
         <div className="admin-header">
@@ -211,107 +436,6 @@ export default async function AdminPage({
             Adicionar
           </button>
         </form>
-      </section>
-
-      <section className="card" id="amigo-secreto">
-        <h2>Amigo secreto</h2>
-        {erro?.startsWith("amigo-secreto") && ERROR_MESSAGES[erro] && (
-          <p className="form-error">{ERROR_MESSAGES[erro]}</p>
-        )}
-
-        {santa && santa.drawnAt ? (
-          <>
-            <p className="proposal-description">
-              <strong>{santa.name}</strong>: sorteio feito, com{" "}
-              {joinedIds.size} participantes. {withWishes} têm desejos na
-              lista. Cada pessoa vê a quem dá o presente em{" "}
-              <Link href="/amigo-secreto">Amigo secreto</Link> — os pares não
-              aparecem aqui.
-            </p>
-            <div className="santa-admin-actions">
-              <form action={endSecretSanta}>
-                <input type="hidden" name="id" value={santa.id} />
-                <button type="submit" className="button">
-                  Encerrar
-                </button>
-              </form>
-              <form action={cancelSecretSanta}>
-                <input type="hidden" name="id" value={santa.id} />
-                <button type="submit" className="option-remove">
-                  Cancelar e apagar sorteio e listas
-                </button>
-              </form>
-            </div>
-          </>
-        ) : santa ? (
-          <>
-            <p className="proposal-description">
-              <strong>{santa.name}</strong>: à espera do sorteio.{" "}
-              {joinedIds.size} participantes, {withWishes} já com desejos na
-              lista. Cada participante preenche a sua lista em{" "}
-              <Link href="/amigo-secreto">Amigo secreto</Link>.
-            </p>
-            <form action={setSecretSantaParticipants}>
-              <input type="hidden" name="id" value={santa.id} />
-              <MemberPicker members={pickable} initial={[...joinedIds]} />
-              <p className="form-hint">
-                Podes mudar a lista até ao sorteio. Quem tirares perde a sua
-                lista de desejos.
-              </p>
-              <button type="submit" className="option-add">
-                Guardar participantes
-              </button>
-            </form>
-            <div className="santa-admin-actions">
-              <form action={drawSecretSanta}>
-                <input type="hidden" name="id" value={santa.id} />
-                <button className="button" type="submit">
-                  Fazer sorteio
-                </button>
-              </form>
-              <form action={cancelSecretSanta}>
-                <input type="hidden" name="id" value={santa.id} />
-                <button type="submit" className="option-remove">
-                  Cancelar evento e apagar listas
-                </button>
-              </form>
-            </div>
-          </>
-        ) : (
-          <form action={createSecretSanta}>
-            <p className="proposal-description">
-              Cria o evento e escolhe quem participa. Aparece o separador
-              Amigo secreto, e cada participante pode logo preencher a sua
-              lista de desejos. O sorteio fazes tu mais tarde, aqui.
-            </p>
-            <div className="form-field">
-              <label htmlFor="santa-name">Nome</label>
-              <input
-                id="santa-name"
-                name="name"
-                type="text"
-                defaultValue={`Amigo secreto ${new Date().getFullYear()}`}
-              />
-            </div>
-            <div className="form-field">
-              <label htmlFor="santa-details">Detalhes (opcional)</label>
-              <textarea
-                id="santa-details"
-                name="details"
-                rows={2}
-                maxLength={1000}
-                placeholder="Ex.: valor até 20 €, troca a 20 de dezembro"
-              />
-            </div>
-            <MemberPicker members={pickable} />
-            <p className="form-hint">
-              Pelo menos {MIN_PARTICIPANTS} pessoas.
-            </p>
-            <button className="button" type="submit">
-              Criar evento
-            </button>
-          </form>
-        )}
       </section>
 
       <ProposalsAdmin />
