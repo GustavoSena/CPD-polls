@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && node scripts/db-deploy.mjs && next build",
     "start": "next start",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:seed": "node prisma/seed.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

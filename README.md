@@ -84,6 +84,31 @@ migrações são aplicadas sozinhas em cada deploy.
   domínio verificado na [Resend](https://resend.com)). Se o Gmail estiver
   configurado, é o Gmail que envia.
 
+## Base de dados das pré-visualizações
+
+Cada *pull request* tem uma pré-visualização na Vercel. Para que essas
+pré-visualizações **nunca mexam na base de dados de produção**, cada uma usa
+um **ramo (branch) próprio da base de dados Neon**: começa como uma cópia da
+produção e tudo o que lá se fizer (migrações, votos, sorteios de teste) fica
+só nesse ramo.
+
+- Na Vercel: *Storage* → a base de dados Neon → *Projects* → ⋮ ao lado de
+  `cpd-polls` → *Update Project Connection* → em *Create database branch for
+  deployment* marcar **Preview** (deixar *Production* desmarcado).
+- O `npm run build` corre `scripts/db-deploy.mjs`, que escreve no log uma
+  impressão digital da base de dados (um hash, nunca o endereço real). Em
+  *Preview* compara-a com `PRODUCTION_DB_FINGERPRINT` (variável só de
+  *Preview*): se for a de produção, o build pára sem tocar em nada; se for
+  outra, aplica as migrações e corre os dados de teste (`prisma/seed.mjs`).
+  Sem essa variável, não aplica migrações nem dados de teste.
+- Dados de teste: quatro membros (Ana, Bruno, Carla e Duarte Teste) cujos
+  emails são o primeiro de `ADMIN_EMAILS` com `+teste1` … `+teste4` antes do
+  `@` (o Gmail entrega-os na mesma caixa), uma proposta de teste e, se não
+  houver nenhum a decorrer, um amigo secreto de teste com esses membros e o
+  admin. Localmente: `npm run db:seed`. Nunca corre em produção.
+- Os ramos `preview/<branch>` são apagados pela Neon quando as
+  pré-visualizações desse branch são apagadas na Vercel.
+
 ## Limitações assumidas (simplicidade primeiro)
 
 - Na página de entrada, quem escrever um email fica a saber se ele está na
