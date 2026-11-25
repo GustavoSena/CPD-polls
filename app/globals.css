@@ -1433,3 +1433,8 @@ input[autocomplete="one-time-code"] {
   width: auto;
   flex: 1 1 8rem;
 }
+
+/* Links to /admin#amigo-secreto land below the sticky header. */
+#amigo-secreto {
+  scroll-margin-top: 7rem;
+}
