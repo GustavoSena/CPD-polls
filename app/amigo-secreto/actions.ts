@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentMember } from "@/lib/auth";
 import { activeEvent, isParticipant } from "@/lib/secretSanta";
-import { fetchLinkPreview, parsePublicUrl } from "@/lib/linkPreview";
+import { imageType } from "@/lib/image";
+import {
+  fetchLinkPreview,
+  parsePublicUrl,
+  type LinkPreview,
+} from "@/lib/linkPreview";
 
 const PAGE = "/amigo-secreto";
 const MAX_ITEMS = 20;
@@ -23,11 +28,15 @@ async function uploadedImage(
   if (!IMAGE_TYPES.has(file.type) || file.size > MAX_IMAGE_BYTES) {
     redirect(`${PAGE}?erro=imagem`);
   }
-  return { mimeType: file.type, data: new Uint8Array(await file.arrayBuffer()) };
+  const data = new Uint8Array(await file.arrayBuffer());
+  const mimeType = imageType(data);
+  if (!mimeType) redirect(`${PAGE}?erro=imagem`);
+  return { mimeType, data };
 }
 
-// Adds a link to the current member's wishlist for the active event. The
-// page's title and preview image are fetched once, here, and stored.
+// Adds a wish to the current member's wishlist for the active event: a link,
+// a picture, or both. For a link, the page's title and preview image are
+// fetched once, here, and stored.
 export async function addWishlistItem(formData: FormData): Promise<void> {
   const member = await currentMember();
   if (!member) redirect(`${PAGE}?erro=membro`);
@@ -39,8 +48,8 @@ export async function addWishlistItem(formData: FormData): Promise<void> {
 
   let raw = String(formData.get("url") ?? "").trim();
   if (raw && !/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
-  const url = parsePublicUrl(raw);
-  if (!url || raw.length > 2000) redirect(`${PAGE}?erro=link`);
+  const url = raw ? parsePublicUrl(raw) : null;
+  if (raw && (!url || raw.length > 2000)) redirect(`${PAGE}?erro=link`);
 
   const note = String(formData.get("note") ?? "").trim();
   if (note.length > MAX_NOTE_LENGTH) redirect(`${PAGE}?erro=nota`);
@@ -51,7 +60,10 @@ export async function addWishlistItem(formData: FormData): Promise<void> {
   if (count >= MAX_ITEMS) redirect(`${PAGE}?erro=limite`);
 
   const uploaded = await uploadedImage(formData);
-  const preview = await fetchLinkPreview(url);
+  if (!url && !uploaded) redirect(`${PAGE}?erro=link-ou-imagem`);
+  const preview: LinkPreview = url
+    ? await fetchLinkPreview(url)
+    : { title: "", image: null };
   const imageData =
     uploaded ??
     (preview.image
@@ -66,7 +78,7 @@ export async function addWishlistItem(formData: FormData): Promise<void> {
 
   await prisma.wishlistItem.create({
     data: {
-      url: url.toString(),
+      url: url?.toString() ?? "",
       title: preview.title,
       imageId: image?.id ?? null,
       note,

@@ -11,7 +11,9 @@ import {
   endSecretSanta,
   removeLink,
   removeMember,
+  removeMemberPhoto,
   setMemberEmail,
+  setMemberPhoto,
   setSecretSantaParticipants,
   addSecretSantaExclusion,
   removeSecretSantaExclusion,
@@ -33,6 +35,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Com estas exclusões não há sorteio possível. Tira alguma exclusão ou junta mais participantes.",
   "email-invalido": "Esse email não parece válido.",
   "email-usado": "Esse email já pertence a outro membro.",
+  foto: "A foto tem de ser JPG, PNG, WebP ou GIF, até 4 MB.",
 };
 
 const DATE_FORMAT = new Intl.DateTimeFormat("pt-PT", {
@@ -337,7 +340,17 @@ export default async function AdminPage({
         {members.map((m) => (
           <div className="member-row" key={m.id}>
             <div className="member-header">
-              <span className="option-title">{m.name}</span>
+              <span className="member-title">
+                {m.imageId && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="avatar avatar-sm"
+                    src={`/media/${m.imageId}`}
+                    alt=""
+                  />
+                )}
+                <span className="option-title">{m.name}</span>
+              </span>
               <form action={removeMember}>
                 <input type="hidden" name="id" value={m.id} />
                 <button type="submit" className="option-remove">
@@ -359,6 +372,30 @@ export default async function AdminPage({
                 Guardar
               </button>
             </form>
+
+            <div className="member-photo-forms">
+              <form action={setMemberPhoto} className="member-photo-form">
+                <input type="hidden" name="id" value={m.id} />
+                <input
+                  type="file"
+                  name="image"
+                  aria-label={`Foto de ${m.name}`}
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  required
+                />
+                <button type="submit" className="option-add">
+                  {m.imageId ? "Trocar foto" : "Guardar foto"}
+                </button>
+              </form>
+              {m.imageId && (
+                <form action={removeMemberPhoto}>
+                  <input type="hidden" name="id" value={m.id} />
+                  <button type="submit" className="option-remove">
+                    Remover foto
+                  </button>
+                </form>
+              )}
+            </div>
 
             {m.links.length === 0 && (
               <p className="empty">

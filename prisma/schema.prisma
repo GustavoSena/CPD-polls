@@ -36,6 +36,9 @@ model Member {
   // Stored lowercased. Optional so members added before email login keep
   // working through their links until the admin fills it in.
   email            String?                  @unique
+  // Profile photo set by the admin (a Media id), shown in the header and
+  // to whoever draws this member in the Secret Santa.
+  imageId          String?
   createdAt        DateTime                 @default(now())
   links            MemberLink[]
   loginCodes       LoginCode[]
@@ -199,11 +202,13 @@ model SecretSantaAssignment {
   @@unique([eventId, receiverId])
 }
 
-// A link on a member's wishlist for one event. Title and preview image are
-// read from the page's Open Graph tags when the link is added; the image is
-// copied into Media so it is served from this site.
+// A wish on a member's wishlist for one event: a link, a picture, or both.
+// For a link, title and preview image are read from the page's Open Graph
+// tags when it is added; the image is copied into Media so it is served
+// from this site.
 model WishlistItem {
   id        String           @id @default(cuid())
+  // "" when the wish is only a picture.
   url       String
   title     String           @default("")
   imageId   String?

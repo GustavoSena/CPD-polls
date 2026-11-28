@@ -251,6 +251,29 @@ h3 {
   white-space: nowrap;
 }
 
+.avatar {
+  display: block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--gold-soft);
+  border: 1.5px solid var(--border);
+}
+
+.member-nav-avatar {
+  width: 30px;
+  height: 30px;
+  margin-left: 0.35rem;
+}
+
+@media (max-width: 520px) {
+  .member-nav-avatar {
+    width: 26px;
+    height: 26px;
+    margin-left: 0.2rem;
+  }
+}
+
 .member-nav-signout {
   border: none;
   background: none;
@@ -970,9 +993,42 @@ input[type="file"]::file-selector-button:hover {
 .member-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 0.5rem;
+}
+
+.member-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.avatar-sm {
+  width: 36px;
+  height: 36px;
+}
+
+.member-photo-forms {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.member-photo-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.member-photo-form input[type="file"] {
+  max-width: 100%;
 }
 
 /* Um link por dispositivo do membro. */
@@ -1086,6 +1142,13 @@ input[type="file"]::file-selector-button:hover {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.santa-reveal-avatar {
+  width: 120px;
+  height: 120px;
+  margin: 0.8rem auto 0.2rem;
+  border-width: 3px;
 }
 
 .santa-reveal-name {
