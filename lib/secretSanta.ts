@@ -97,7 +97,7 @@ export async function secretSantaViewFor(memberId: string) {
 
   const assignment = await prisma.secretSantaAssignment.findUnique({
     where: { eventId_giverId: { eventId: event.id, giverId: memberId } },
-    include: { receiver: { select: { id: true, name: true } } },
+    include: { receiver: { select: { id: true, name: true, imageId: true } } },
   });
   if (!assignment) return { event, phase: "drawn", joined: false } as const;
 

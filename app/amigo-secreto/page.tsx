@@ -18,6 +18,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   nota: "A nota é demasiado longa (máximo 300 caracteres).",
   limite: "A tua lista já tem o máximo de 20 desejos.",
   imagem: "A imagem tem de ser JPG, PNG, WebP ou GIF, até 4 MB.",
+  "link-ou-imagem": "Junta um link ou uma imagem do presente (ou os dois).",
 };
 
 type Item = {
@@ -37,28 +38,45 @@ function hostOf(url: string): string {
 }
 
 function WishCard({ item, removable }: { item: Item; removable: boolean }) {
-  const host = hostOf(item.url);
+  const host = item.url ? hostOf(item.url) : "";
+  const image = item.imageId ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="wish-image" src={`/media/${item.imageId}`} alt="" />
+  ) : (
+    <span className="wish-image wish-image-empty" aria-hidden="true">
+      🎁
+    </span>
+  );
   return (
     <div className="wish-card">
-      <a
-        className="wish-link"
-        href={item.url}
-        target="_blank"
-        rel="noopener noreferrer nofollow"
-      >
-        {item.imageId ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="wish-image" src={`/media/${item.imageId}`} alt="" />
-        ) : (
-          <span className="wish-image wish-image-empty" aria-hidden="true">
-            🎁
+      {item.url ? (
+        <a
+          className="wish-link"
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+        >
+          {image}
+          <span className="wish-body">
+            <span className="wish-title">{item.title || host}</span>
+            <span className="wish-host">{host}</span>
           </span>
-        )}
-        <span className="wish-body">
-          <span className="wish-title">{item.title || host}</span>
-          <span className="wish-host">{host}</span>
-        </span>
-      </a>
+        </a>
+      ) : (
+        // A picture-only wish: the picture opens full size.
+        <a
+          className="wish-link"
+          href={`/media/${item.imageId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {image}
+          <span className="wish-body">
+            <span className="wish-title">Imagem do presente</span>
+            <span className="wish-host">Toca para ver maior</span>
+          </span>
+        </a>
+      )}
       {item.note && (
         <p className="wish-note">
           <Linkify text={item.note} />
@@ -120,9 +138,11 @@ function OwnWishlist({ items }: { items: OwnItem[] }) {
           type="text"
           inputMode="url"
           autoComplete="off"
-          required
           placeholder="https://…"
         />
+        <p className="form-hint">
+          Põe um link, uma imagem, ou os dois.
+        </p>
       </div>
       <div className="form-field">
         <label htmlFor="wish-note">Nota (opcional)</label>
@@ -135,7 +155,7 @@ function OwnWishlist({ items }: { items: OwnItem[] }) {
         />
       </div>
       <div className="form-field">
-        <label htmlFor="wish-image">Imagem (opcional)</label>
+        <label htmlFor="wish-image">Imagem</label>
         <input
           id="wish-image"
           name="image"
@@ -143,12 +163,12 @@ function OwnWishlist({ items }: { items: OwnItem[] }) {
           accept="image/jpeg,image/png,image/webp,image/gif"
         />
         <p className="form-hint">
-          Tentamos ir buscar a imagem ao link. Algumas lojas (Amazon,
-          Worten, Fnac, Zara…) não deixam, por isso podes juntar uma
-          captura de ecrã ou foto do presente.
+          Sem link, basta uma foto do presente. Com link, tentamos ir buscar
+          a imagem à página; algumas lojas (Amazon, Worten, Fnac, Zara…) não
+          deixam, por isso podes juntar uma captura de ecrã.
         </p>
       </div>
-      <SubmitButton idle="Adicionar à lista" pending="A ler o link…" />
+      <SubmitButton idle="Adicionar à lista" pending="A adicionar…" />
     </form>
   </section>
   );
@@ -237,6 +257,14 @@ export default async function SecretSantaPage({
 
       <section className="card santa-reveal">
         <p className="santa-reveal-label">Vais dar um presente a</p>
+        {view.receiver.imageId && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="avatar santa-reveal-avatar"
+            src={`/media/${view.receiver.imageId}`}
+            alt=""
+          />
+        )}
         <p className="santa-reveal-name">{view.receiver.name}</p>
         <p className="form-hint">
           É segredo! Só tu sabes isto — nem a administração vê os pares.

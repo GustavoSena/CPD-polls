@@ -48,9 +48,61 @@ export async function setMemberEmail(formData: FormData): Promise<void> {
 export async function removeMember(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const id = String(formData.get("id") ?? "");
-  await prisma.member.deleteMany({ where: { id } });
+  const member = await prisma.member.findUnique({ where: { id } });
+  await prisma.$transaction([
+    prisma.member.deleteMany({ where: { id } }),
+    ...(member?.imageId
+      ? [prisma.media.deleteMany({ where: { id: member.imageId } })]
+      : []),
+  ]);
   revalidatePath("/admin");
   revalidatePath("/");
+}
+
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+// Sets (or replaces) a member's profile photo.
+export async function setMemberPhoto(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const id = String(formData.get("id") ?? "");
+  const file = formData.get("image");
+  if (
+    !(file instanceof File) ||
+    file.size === 0 ||
+    !PHOTO_TYPES.has(file.type) ||
+    file.size > MAX_PHOTO_BYTES
+  ) {
+    redirect("/admin?erro=foto");
+  }
+  const member = await prisma.member.findUnique({ where: { id } });
+  if (member) {
+    const media = await prisma.media.create({
+      data: { mimeType: file.type, data: new Uint8Array(await file.arrayBuffer()) },
+    });
+    await prisma.$transaction([
+      prisma.member.update({ where: { id }, data: { imageId: media.id } }),
+      ...(member.imageId
+        ? [prisma.media.deleteMany({ where: { id: member.imageId } })]
+        : []),
+    ]);
+  }
+  revalidatePath("/", "layout");
+  redirect("/admin");
+}
+
+export async function removeMemberPhoto(formData: FormData): Promise<void> {
+  if (!(await isAdmin())) redirect("/admin");
+  const id = String(formData.get("id") ?? "");
+  const member = await prisma.member.findUnique({ where: { id } });
+  if (member?.imageId) {
+    await prisma.$transaction([
+      prisma.member.update({ where: { id }, data: { imageId: null } }),
+      prisma.media.deleteMany({ where: { id: member.imageId } }),
+    ]);
+  }
+  revalidatePath("/", "layout");
+  redirect("/admin");
 }
 
 // An extra secret link for the same person, so they can be recognized on
