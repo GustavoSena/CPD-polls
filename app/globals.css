@@ -993,7 +993,7 @@ input[type="file"]::file-selector-button:hover {
 .member-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 0.5rem;
 }
