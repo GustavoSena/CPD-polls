@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { currentMember } from "@/lib/auth";
 import { activeEvent, isParticipant } from "@/lib/secretSanta";
+import { imageType } from "@/lib/image";
 import {
   fetchLinkPreview,
   parsePublicUrl,
@@ -27,7 +28,10 @@ async function uploadedImage(
   if (!IMAGE_TYPES.has(file.type) || file.size > MAX_IMAGE_BYTES) {
     redirect(`${PAGE}?erro=imagem`);
   }
-  return { mimeType: file.type, data: new Uint8Array(await file.arrayBuffer()) };
+  const data = new Uint8Array(await file.arrayBuffer());
+  const mimeType = imageType(data);
+  if (!mimeType) redirect(`${PAGE}?erro=imagem`);
+  return { mimeType, data };
 }
 
 // Adds a wish to the current member's wishlist for the active event: a link,

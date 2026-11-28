@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { isAdmin, normalizeEmail } from "@/lib/auth";
 import { drawPairs, exclusionKey, MIN_PARTICIPANTS } from "@/lib/secretSanta";
+import { imageType } from "@/lib/image";
 
 function newToken(): string {
   return randomBytes(16).toString("base64url");
@@ -62,7 +63,9 @@ export async function removeMember(formData: FormData): Promise<void> {
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
-// Sets (or replaces) a member's profile photo.
+// Sets (or replaces) a member's profile photo. The swap only happens if
+// the photo is still the one read here, so overlapping requests can't
+// leave an image behind that no member points to.
 export async function setMemberPhoto(formData: FormData): Promise<void> {
   if (!(await isAdmin())) redirect("/admin");
   const id = String(formData.get("id") ?? "");
@@ -75,17 +78,27 @@ export async function setMemberPhoto(formData: FormData): Promise<void> {
   ) {
     redirect("/admin?erro=foto");
   }
+  const data = new Uint8Array(await file.arrayBuffer());
+  const mimeType = imageType(data);
+  if (!mimeType) redirect("/admin?erro=foto");
+
   const member = await prisma.member.findUnique({ where: { id } });
   if (member) {
-    const media = await prisma.media.create({
-      data: { mimeType: file.type, data: new Uint8Array(await file.arrayBuffer()) },
-    });
-    await prisma.$transaction([
-      prisma.member.update({ where: { id }, data: { imageId: media.id } }),
-      ...(member.imageId
-        ? [prisma.media.deleteMany({ where: { id: member.imageId } })]
-        : []),
-    ]);
+    await prisma.$transaction(
+      async (tx) => {
+        const media = await tx.media.create({ data: { mimeType, data } });
+        const swapped = await tx.member.updateMany({
+          where: { id, imageId: member.imageId },
+          data: { imageId: media.id },
+        });
+        if (swapped.count === 0) {
+          await tx.media.delete({ where: { id: media.id } });
+        } else if (member.imageId) {
+          await tx.media.deleteMany({ where: { id: member.imageId } });
+        }
+      },
+      { timeout: 20_000 }
+    );
   }
   revalidatePath("/", "layout");
   redirect("/admin");
@@ -96,10 +109,16 @@ export async function removeMemberPhoto(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   const member = await prisma.member.findUnique({ where: { id } });
   if (member?.imageId) {
-    await prisma.$transaction([
-      prisma.member.update({ where: { id }, data: { imageId: null } }),
-      prisma.media.deleteMany({ where: { id: member.imageId } }),
-    ]);
+    const imageId = member.imageId;
+    await prisma.$transaction(async (tx) => {
+      const cleared = await tx.member.updateMany({
+        where: { id, imageId },
+        data: { imageId: null },
+      });
+      if (cleared.count === 1) {
+        await tx.media.deleteMany({ where: { id: imageId } });
+      }
+    });
   }
   revalidatePath("/", "layout");
   redirect("/admin");
